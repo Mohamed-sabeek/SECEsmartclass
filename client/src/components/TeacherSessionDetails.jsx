@@ -1,0 +1,199 @@
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { 
+  ArrowLeft, 
+  Calendar, 
+  Clock, 
+  Users, 
+  User, 
+  CheckCircle, 
+  XCircle, 
+  Loader2, 
+  Download,
+  Info
+} from 'lucide-react';
+import axios from 'axios';
+import toast from 'react-hot-toast';
+
+const TeacherSessionDetails = () => {
+  const { sessionId } = useParams();
+  const navigate = useNavigate();
+  const [session, setSession] = useState(null);
+  const [attendance, setAttendance] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (sessionId && sessionId !== 'undefined') {
+      fetchSessionDetails();
+    }
+  }, [sessionId]);
+
+  const fetchSessionDetails = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`/api/sessions/${sessionId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSession(response.data.data.session);
+      setAttendance(response.data.data.attendance);
+    } catch (error) {
+      console.error('Error fetching session details:', error);
+      toast.error('Failed to load session details');
+      navigate('/teacher/history');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateDuration = (start, end) => {
+    if (!end) return 'Ongoing';
+    const durationMs = new Date(end) - new Date(start);
+    const mins = Math.round(durationMs / 60000);
+    if (mins < 60) return `${mins} mins`;
+    const hours = Math.floor(mins / 60);
+    const remainingMins = mins % 60;
+    return `${hours}h ${remainingMins}m`;
+  };
+
+  if (loading) {
+    return (
+      <div className="h-96 flex items-center justify-center bg-white rounded-[2.5rem] border border-gray-100 shadow-sm">
+        <Loader2 className="animate-spin text-[#FFD700]" size={40} />
+      </div>
+    );
+  }
+
+  if (!session) return null;
+
+  return (
+    <div className="animate-in fade-in slide-in-from-bottom duration-700">
+      {/* Top Navigation */}
+      <button 
+        onClick={() => navigate('/teacher/history')}
+        className="group flex items-center text-gray-400 hover:text-[#1A1A1A] mb-8 font-black uppercase tracking-widest text-xs transition-colors"
+      >
+        <ArrowLeft size={18} className="mr-2 group-hover:-translate-x-1 transition-transform" />
+        Back to Archives
+      </button>
+
+      {/* Main Header Card */}
+      <div className="bg-[#1A1A1A] rounded-[2.5rem] p-12 shadow-2xl relative overflow-hidden mb-10 border border-white/5">
+        <div className="absolute top-0 right-0 p-10 opacity-10">
+           <Info size={120} className="text-white" />
+        </div>
+        
+        <div className="relative z-10">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+            <div>
+              <span className="inline-flex items-center px-3 py-1 bg-[#FFD700] text-[#1A1A1A] text-[10px] font-black uppercase tracking-widest rounded-lg mb-4 italic">
+                Session Transcript
+              </span>
+              <h1 className="text-5xl font-black text-white italic tracking-tighter leading-none mb-2">
+                {session.classId?.className}
+              </h1>
+              <p className="text-gray-400 font-bold uppercase tracking-widest text-xs italic">
+                {session.classId?.year} Year — Section {session.classId?.section}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-8 md:gap-12">
+               <div className="space-y-1">
+                  <div className="flex items-center text-gray-500 mb-1">
+                     <Calendar size={14} className="mr-2" />
+                     <span className="text-[10px] font-black uppercase tracking-widest">Date broadcast</span>
+                  </div>
+                  <p className="text-lg font-black text-white italic">
+                    {new Date(session.startTime).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </p>
+               </div>
+               <div className="space-y-1">
+                  <div className="flex items-center text-gray-500 mb-1">
+                     <Clock size={14} className="mr-2" />
+                     <span className="text-[10px] font-black uppercase tracking-widest">Efficiency Window</span>
+                  </div>
+                  <p className="text-lg font-black text-white italic">{calculateDuration(session.startTime, session.endTime)}</p>
+               </div>
+               <div className="space-y-1">
+                  <div className="flex items-center text-gray-500 mb-1">
+                     <User size={14} className="mr-2" />
+                     <span className="text-[10px] font-black uppercase tracking-widest">Faculty Lead</span>
+                  </div>
+                  <p className="text-lg font-black text-white italic">{session.teacherId?.name}</p>
+               </div>
+               <div className="space-y-1">
+                  <div className="flex items-center text-gray-500 mb-1">
+                     <Users size={14} className="mr-2" />
+                     <span className="text-[10px] font-black uppercase tracking-widest">Attendance</span>
+                  </div>
+                  <p className="text-lg font-black text-[#FFD700] italic">{attendance.length} Scanned</p>
+               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Attendance Log Table */}
+      <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden">
+        <div className="p-8 border-b border-gray-50 bg-gray-50/20 flex justify-between items-center">
+           <h3 className="text-xl font-black text-[#1A1A1A] tracking-tight">Academic <span className="text-[#FFD700]">Roster</span></h3>
+           <button className="flex items-center px-6 py-3 bg-[#1A1A1A] text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-[#FFD700] hover:text-[#1A1A1A] transition-all shadow-lg active:scale-95">
+              <Download size={16} className="mr-2" />
+              Export CSV
+           </button>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-50/50">
+                <th className="px-10 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">Roll Number</th>
+                <th className="px-10 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">Student Identity</th>
+                <th className="px-10 py-6 text-center text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">Broadcast Status</th>
+                <th className="px-10 py-6 text-right text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">Timestamp</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {attendance.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="px-10 py-20 text-center text-gray-400 font-medium italic">
+                    No individual student records were captured for this session.
+                  </td>
+                </tr>
+              ) : (
+                attendance.map((record) => (
+                  <tr key={record._id} className="group hover:bg-yellow-50/20 transition-all duration-300">
+                    <td className="px-10 py-6">
+                      <span className="bg-gray-50 px-3 py-1.5 rounded-lg text-xs font-black text-[#1A1A1A] border border-gray-100 uppercase tracking-widest">
+                        {record.studentId?.studentDetails?.rollNo || 'N/A'}
+                      </span>
+                    </td>
+                    <td className="px-10 py-6">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 rounded-full bg-[#1A1A1A] text-[#FFD700] flex items-center justify-center text-[10px] font-black mr-3 shadow-lg group-hover:scale-110 transition-transform">
+                          {record.studentId?.name.charAt(0)}
+                        </div>
+                        <span className="text-sm font-bold text-[#1A1A1A]">{record.studentId?.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-10 py-6 text-center">
+                      <span className="inline-flex items-center px-4 py-1.5 bg-green-50 text-green-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-green-100">
+                        <CheckCircle size={12} className="mr-1.5" />
+                        Present
+                      </span>
+                    </td>
+                    <td className="px-10 py-6 text-right text-[10px] font-black text-gray-400 uppercase italic">
+                      {new Date(record.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TeacherSessionDetails;
