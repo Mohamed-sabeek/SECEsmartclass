@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ClipboardCheck, Search, Filter, Users, CheckCircle, XCircle, Loader2, Info, ArrowUpRight, GraduationCap } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import Dropdown from './ui/Dropdown';
 
 const TeacherAttendance = ({ teacher }) => {
   const [attendanceData, setAttendanceData] = useState([]);
@@ -86,21 +87,19 @@ const TeacherAttendance = ({ teacher }) => {
               />
            </div>
            
-           <div className="flex items-center bg-white border border-gray-100 rounded-2xl px-4 py-2 shadow-sm min-w-[200px]">
-              <Filter size={18} className="text-[#FFD700] mr-3" />
-              <select 
-                className="bg-transparent border-none focus:ring-0 text-sm font-black w-full cursor-pointer uppercase tracking-tight"
-                value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
-              >
-                <option value="">All Assinged Classes</option>
-                {teacher?.assignedClasses?.map(cls => (
-                  <option key={cls._id} value={cls._id}>
-                    {cls.className} ({cls.section})
-                  </option>
-                ))}
-              </select>
-           </div>
+           <Dropdown
+              value={selectedClass}
+              onChange={setSelectedClass}
+              options={[
+                { label: "All Assigned Classes", value: "" },
+                ...(teacher?.assignedClasses?.map(cls => ({
+                  label: `${cls.className} (${cls.section})`,
+                  value: cls._id
+                })) || [])
+              ]}
+              placeholder="All Assigned Classes"
+              className="min-w-[250px]"
+            />
         </div>
       </div>
 

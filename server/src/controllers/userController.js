@@ -4,6 +4,8 @@ const { Readable } = require('stream');
 const csv = require('csv-parser');
 const mongoose = require('mongoose');
 const asyncHandler = require('../utils/asyncHandler');
+const cloudinary = require("../config/cloudinary");
+const fs = require("fs");
 
 // @desc Get current user profile
 // @route GET /api/users/me
@@ -36,7 +38,7 @@ const getMe = asyncHandler(async (req, res) => {
 // Add new user (Admin only)
 const addUser = async (req, res) => {
   try {
-    const { name, email, role, department, classId, rollNo, year, subject } = req.body;
+    const { name, email, role, department, classId, rollNo, admissionYear, currentYear, subject } = req.body;
 
     // 1. Validate required fields
     if (!name || !email || !role) {
@@ -64,11 +66,11 @@ const addUser = async (req, res) => {
 
     // 5. Add role-based fields ONLY when needed
     if (role === 'student') {
-      if (!rollNo || !year || !classId) {
-        return res.status(400).json({ message: 'Student roll number, year, and class assignment are required' });
+      if (!rollNo || !admissionYear || !currentYear || !classId) {
+        return res.status(400).json({ message: 'Student roll number, admission year, current year, and class assignment are required' });
       }
       userData.classId = classId; // Must be present
-      userData.studentDetails = { rollNo, year };
+      userData.studentDetails = { rollNo, admissionYear, currentYear };
     } else if (role === 'teacher') {
       if (!subject) {
         return res.status(400).json({ message: 'Teacher specialization subject is required' });
@@ -183,7 +185,7 @@ const getAllUsers = async (req, res) => {
 const updateUser = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, department, classId, rollNo, year, subject } = req.body;
+    const { name, email, department, classId, rollNo, admissionYear, currentYear, subject } = req.body;
     const updateData = { 
       name, 
       email, 
@@ -200,7 +202,8 @@ const updateUser = asyncHandler(async (req, res) => {
     if (userToUpdate.role === 'student') {
       updateData.studentDetails = { 
         rollNo: rollNo !== undefined ? rollNo : userToUpdate.studentDetails?.rollNo, 
-        year: year !== undefined ? (Number(year) || userToUpdate.studentDetails?.year) : userToUpdate.studentDetails?.year 
+        admissionYear: admissionYear !== undefined ? (Number(admissionYear) || userToUpdate.studentDetails?.admissionYear) : userToUpdate.studentDetails?.admissionYear,
+        currentYear: currentYear !== undefined ? (Number(currentYear) || userToUpdate.studentDetails?.currentYear) : userToUpdate.studentDetails?.currentYear
       };
     } else if (userToUpdate.role === 'teacher' && subject) {
       updateData.teacherDetails = { subject };
@@ -245,8 +248,8 @@ const assignTeacherToClasses = async (req, res) => {
     const { teacherId, classIds } = req.body;
 
     // 1. Validate input
-    if (!teacherId || !Array.isArray(classIds) || classIds.length === 0) {
-      return res.status(400).json({ message: 'Teacher ID and a non-empty array of Class IDs are required' });
+    if (!teacherId || !Array.isArray(classIds)) {
+      return res.status(400).json({ message: 'Teacher ID and an array of Class IDs are required' });
     }
 
     // 2. Find teacher and validate role
@@ -404,6 +407,86 @@ const getStudentsByClass = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc Upload/Update profile image to Cloudinary
+// @route PUT /api/users/profile/avatar
+// @access Private
+const uploadProfileImage = asyncHandler(async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      console.log('UPLOAD ERROR: User not found in DB');
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (!req.file) {
+      console.log('UPLOAD ERROR: No file in request');
+      return res.status(400).json({ success: false, message: "No file uploaded" });
+    }
+
+    // Upload to Cloudinary with specific public_id for overwrite
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: "sece-smartclass/avatars",
+      public_id: `user_${user._id.toString()}`,
+      overwrite: true,
+      resource_type: "auto"
+    });
+
+    // Update user avatar URL with cache busting
+    user.avatar = result.secure_url + `?t=${Date.now()}`;
+    await user.save();
+
+    // Delete temporary file
+    if (fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      message: "Avatar updated successfully",
+      avatar: user.avatar 
+    });
+  } catch (error) {
+    console.error('CLOUDINARY UPLOAD ERROR DETAIL:', error);
+    // Cleanup temp file on error
+    if (req.file && fs.existsSync(req.file.path)) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (unlinkError) {
+        console.error('Error deleting temp file:', unlinkError);
+      }
+    }
+    res.status(500).json({ 
+      success: false, 
+      message: 'Cloudinary upload failed', 
+      error: error.message,
+      detail: error 
+    });
+  }
+});
+
+// Update current user profile (Basic Info)
+const updateProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (req.body.name) user.name = req.body.name;
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: user
+    });
+  } catch (error) {
+    console.error('UPDATE PROFILE ERROR:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
 module.exports = {
   addUser,
   getUserCount,
@@ -413,5 +496,7 @@ module.exports = {
   assignTeacherToClasses,
   bulkUploadUsers,
   getMe,
-  getStudentsByClass
+  getStudentsByClass,
+  updateProfile,
+  uploadProfileImage
 };

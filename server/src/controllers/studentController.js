@@ -21,8 +21,7 @@ const getStudentDashboard = asyncHandler(async (req, res) => {
 
     // 1. Total sessions conducted for student's class
     const totalClasses = await Session.countDocuments({ 
-      classId: student.classId,
-      status: 'ENDED' // Assuming we only count completed classes for analytics
+      classId: student.classId
     });
 
     // 2. Classes attended by the student
@@ -63,10 +62,9 @@ const getStudentAttendance = asyncHandler(async (req, res) => {
       return res.status(200).json({ success: true, data: [] });
     }
 
-    // Reuse dashboard logic but maybe more detailed later
+    // Total sessions conducted for student's class
     const totalClasses = await Session.countDocuments({ 
-      classId: student.classId,
-      status: 'ENDED'
+      classId: student.classId
     });
 
     const sessionsOfClass = await Session.find({ classId: student.classId }).select('_id');
@@ -108,12 +106,12 @@ const getStudentHistory = asyncHandler(async (req, res) => {
       return res.status(200).json({ success: true, data: [] });
     }
 
-    // Get all completed sessions for this student's class
+    // Get all sessions for this student's class (LIVE or ENDED)
     const sessions = await Session.find({ 
-      classId: student.classId,
-      status: 'ENDED'
+      classId: student.classId
     })
     .populate('teacherId', 'name')
+    .populate('classId', 'className section year')
     .sort({ startTime: -1 });
 
     const sessionIds = sessions.map(s => s._id);
@@ -129,7 +127,9 @@ const getStudentHistory = asyncHandler(async (req, res) => {
 
     const result = sessions.map(session => ({
       _id: session._id,
-      className: session.classId?.className || 'Class',
+      className: session.classId ? 
+        `${session.classId.className} (S-${session.classId.section})` : 
+        'Class',
       teacherName: session.teacherId?.name || 'Faculty',
       startTime: session.startTime,
       endTime: session.endTime,

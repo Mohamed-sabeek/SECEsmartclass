@@ -10,8 +10,11 @@ const {
   assignTeacherToClasses,
   bulkUploadUsers,
   getMe,
-  getStudentsByClass
+  getStudentsByClass,
+  updateProfile,
+  uploadProfileImage
 } = require('../controllers/userController');
+const upload = require('../middleware/upload');
 
 const { body } = require('express-validator');
 const { validate } = require('../middleware/validator');
@@ -21,6 +24,12 @@ router.use(protect);
 
 // GET /api/users/me - Get current user profile (Teacher/Student/Admin)
 router.get('/me', getMe);
+
+// PUT /api/users/profile - Update current user profile (Name)
+router.put('/profile', updateProfile);
+
+// PUT /api/users/profile/avatar - Update current user profile image (Cloudinary)
+router.put('/profile/avatar', upload.single('avatar'), uploadProfileImage);
 
 // Admin-only routes below this line
 router.use(adminOnly);
@@ -48,10 +57,10 @@ router.put('/:id', updateUser);
 // DELETE /api/users/:id - Delete user
 router.delete('/:id', deleteUser);
 
-const multer = require('multer');
-const upload = multer({ storage: multer.memoryStorage() });
-
 // POST /api/users/bulk-upload - Bulk upload users via CSV
 router.post('/bulk-upload', upload.single('file'), bulkUploadUsers);
+
+// POST /api/users/assign-classes - Assign teacher to multiple classes
+router.post('/assign-classes', assignTeacherToClasses);
 
 module.exports = router;

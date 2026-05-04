@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Video, Zap, Clock, Users, Play, Square, Loader2, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import Dropdown from './ui/Dropdown';
 
 const TeacherLiveSession = ({ teacher }) => {
   const [activeSession, setActiveSession] = useState(null);
@@ -123,22 +124,20 @@ const TeacherLiveSession = ({ teacher }) => {
                    </div>
                    <h3 className="text-4xl font-black text-[#1A1A1A] mb-4 tracking-tighter italic">Initialize Broadcast</h3>
                    <p className="text-gray-500 text-lg mb-10 font-bold uppercase tracking-widest text-[10px]">Select a batch to start your digital attendance session</p>
-                   
-                   <div className="space-y-6">
+                                      <div className="space-y-6">
                       <div className="relative group">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block italic">Select Target Batch</label>
-                        <select 
+                        <Dropdown
                           value={selectedClass}
-                          onChange={(e) => setSelectedClass(e.target.value)}
-                          className="w-full bg-gray-50 border-none rounded-2xl px-6 py-5 text-lg font-black text-[#1A1A1A] focus:ring-4 focus:ring-[#FFD700]/10 transition-all appearance-none uppercase tracking-tight outline-none"
-                        >
-                          <option value="">-- Choose Assigned Class --</option>
-                          {teacher?.assignedClasses?.map(cls => (
-                            <option key={cls._id} value={cls._id}>
-                              {cls.className} — Year {cls.year} ({cls.section})
-                            </option>
-                          ))}
-                        </select>
+                          onChange={setSelectedClass}
+                          options={teacher?.assignedClasses?.map(cls => ({
+                            label: `${cls.className} — Year ${cls.year} (${cls.section})`,
+                            value: cls._id
+                          })) || []}
+                          placeholder="-- Choose Assigned Class --"
+                          className="w-full"
+                          buttonClassName="!rounded-2xl !py-5 !bg-gray-50 !border-none !text-lg !font-black !tracking-tight !text-[#1A1A1A] !uppercase"
+                        />
                       </div>
 
                       <button 

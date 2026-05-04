@@ -4,6 +4,14 @@ import { Users, ArrowLeft, Loader2, GraduationCap, Mail, Calendar } from 'lucide
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
+const getYearLabel = (year) => {
+  if (year === 1) return "1st Year";
+  if (year === 2) return "2nd Year";
+  if (year === 3) return "3rd Year";
+  if (year === 4) return "4th Year";
+  return "N/A";
+};
+
 const TeacherBatchRoster = () => {
   const { classId } = useParams();
   const navigate = useNavigate();
@@ -69,8 +77,12 @@ const TeacherBatchRoster = () => {
           <h2 className="text-3xl font-black text-[#1A1A1A] tracking-tighter">
             Batch <span className="text-[#FFD700]">Roster</span>
           </h2>
-          <p className="text-gray-500 mt-2 font-medium italic">
-            {classInfo ? `${classInfo.className} — ${classInfo.year} Year (${classInfo.section})` : 'Viewing student roll call'}
+          <p className="text-gray-500 mt-2 font-medium italic uppercase tracking-widest text-[10px]">
+            {classInfo ? (
+              `${classInfo.className} — Batch ${new Date().getFullYear() - (classInfo.year || 1) + 1}-${new Date().getFullYear() - (classInfo.year || 1) + 5} (Section ${classInfo.section || 'N/A'})`
+            ) : (
+              'Viewing student roll call'
+            )}
           </p>
         </div>
         
@@ -101,7 +113,8 @@ const TeacherBatchRoster = () => {
                 <tr className="bg-gray-50/50">
                   <th className="px-10 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50 font-black">Student Details</th>
                   <th className="px-10 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50 text-center font-black">Roll Number</th>
-                  <th className="px-10 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50 text-center font-black">Academic Year</th>
+                  <th className="px-10 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50 text-center font-black">Batch</th>
+                  <th className="px-10 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50 text-center font-black">Level</th>
                   <th className="px-10 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50 text-right font-black">Contact</th>
                 </tr>
               </thead>
@@ -127,9 +140,16 @@ const TeacherBatchRoster = () => {
                       </span>
                     </td>
                     <td className="px-10 py-6 text-center">
+                      <span className="text-xs font-black text-gray-700 italic">
+                        {student.studentDetails?.admissionYear ? `${student.studentDetails.admissionYear} - ${student.studentDetails.admissionYear + 4}` : 'N/A'}
+                      </span>
+                    </td>
+                    <td className="px-10 py-6 text-center">
                       <div className="inline-flex items-center space-x-2">
                         <Calendar size={14} className="text-[#FFD700]" />
-                        <span className="text-xs font-black text-gray-700">{student.studentDetails?.year} Year</span>
+                        <span className="text-xs font-black text-gray-700">
+                          {getYearLabel(student.studentDetails?.currentYear)}
+                        </span>
                       </div>
                     </td>
                     <td className="px-10 py-6 text-right">

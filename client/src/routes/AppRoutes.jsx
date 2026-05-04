@@ -54,7 +54,6 @@ export function AppRoutes() {
           </ProtectedRoute>
         } 
       />
-
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

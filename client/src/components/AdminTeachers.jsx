@@ -2,8 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { Plus, Edit2, Trash2, Search, X, AlertCircle, Users, Filter, Upload } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import defaultAvatar from '../assets/default-avatar.jpg';
 import useDebounce from '../hooks/useDebounce';
 import Pagination from './common/Pagination';
+import Dropdown from './ui/Dropdown';
 
 const AdminTeachers = () => {
   const [showModal, setShowModal] = useState(false);
@@ -188,19 +190,16 @@ const AdminTeachers = () => {
               />
             </div>
             
-            <div className="min-w-[200px] flex items-center bg-white border border-gray-200 rounded-2xl px-4 py-2 shadow-sm">
-              <Filter size={18} className="text-[#FFD700] mr-3" />
-              <select 
-                className="bg-transparent border-none focus:ring-0 text-sm font-black w-full cursor-pointer uppercase tracking-tight"
-                value={filters.departmentId}
-                onChange={(e) => setFilters({...filters, departmentId: e.target.value})}
-              >
-                <option value="">All Departments</option>
-                {departments.map(dept => (
-                  <option key={dept._id} value={dept.code}>{dept.name}</option>
-                ))}
-              </select>
-            </div>
+            <Dropdown
+              value={filters.departmentId}
+              onChange={(val) => setFilters({...filters, departmentId: val})}
+              options={[
+                { label: "All Departments", value: "" },
+                ...departments.map(dept => ({ label: dept.name, value: dept.code }))
+              ]}
+              placeholder="All Departments"
+              className="min-w-[200px]"
+            />
           </div>
         </div>
 
@@ -233,8 +232,15 @@ const AdminTeachers = () => {
                   <tr key={teacher._id} className="group hover:bg-yellow-50/30 transition-all duration-300">
                     <td className="px-10 py-5">
                       <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-xl bg-[#1A1A1A] flex items-center justify-center text-[#FFD700] font-black text-sm mr-4 shadow-lg group-hover:rotate-6 transition-transform">
-                          {teacher.name.charAt(0)}
+                        <div className="w-10 h-10 rounded-xl bg-[#1A1A1A] flex items-center justify-center text-[#FFD700] font-black text-sm mr-4 shadow-lg group-hover:rotate-6 transition-transform overflow-hidden">
+                          <img 
+                            src={teacher.avatar || defaultAvatar} 
+                            alt={teacher.name} 
+                            onError={(e) => {
+                              e.currentTarget.src = defaultAvatar;
+                            }}
+                            className="w-full h-full object-cover" 
+                          />
                         </div>
                         <div className="flex flex-col">
                           <span className="text-base font-bold text-[#1A1A1A]">{teacher.name}</span>
@@ -359,20 +365,14 @@ const AdminTeachers = () => {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Department</label>
-                  <select
-                    name="department"
+                  <Dropdown
                     value={formData.department}
-                    onChange={handleChange}
-                    className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD700] focus:border-[#FFD700] transition-all font-black text-lg appearance-none cursor-pointer shadow-sm"
-                    required
-                  >
-                    <option value="">Select Dept</option>
-                    {departments.map((dept) => (
-                      <option key={dept._id} value={dept.code}>
-                        {dept.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setFormData({...formData, department: val})}
+                    options={departments.map(dept => ({ label: dept.name, value: dept.code }))}
+                    placeholder="Select Dept"
+                    className="w-full"
+                    buttonClassName="!rounded-xl !py-4 !bg-gray-50 !border-gray-100 !font-black !text-lg !shadow-sm"
+                  />
                 </div>
                 <div>
                   <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Specialization</label>

@@ -1,11 +1,16 @@
-import { useState, useEffect } from 'react';
-import { History, Calendar, Clock, Loader2, ArrowRight } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { History, Calendar, Clock, Loader2, ArrowRight, X } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import Dropdown from './ui/Dropdown';
 
 const TeacherHistory = () => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filterClass, setFilterClass] = useState('All');
+  const [filterMonth, setFilterMonth] = useState('All');
+  const [filterDate, setFilterDate] = useState('');
+  const dateInputRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -53,6 +58,70 @@ const TeacherHistory = () => {
         <p className="text-gray-500 mt-2 font-medium italic">Log of all previously broadcasted sessions and teaching records</p>
       </div>
 
+      {!loading && history.length > 0 && (
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <Dropdown
+            value={filterClass}
+            onChange={setFilterClass}
+            options={['All', ...new Set(history.map(s => s.classId?.className || 'Deleted Class'))].map(cls => ({
+              label: cls === 'All' ? 'All Classes' : cls,
+              value: cls
+            }))}
+            className="md:w-64"
+          />
+          <Dropdown
+            value={filterMonth}
+            onChange={setFilterMonth}
+            options={['All', ...new Set(history.map(s => new Date(s.startTime).toLocaleString('default', { month: 'long', year: 'numeric' })))].map(month => ({
+              label: month === 'All' ? 'All Months' : month,
+              value: month
+            }))}
+            className="md:w-64"
+          />
+
+          <div className="flex-1 relative group">
+            <button 
+              onClick={() => dateInputRef.current?.showPicker?.() || dateInputRef.current?.click()}
+              className="absolute left-6 top-1/2 -translate-y-1/2 text-[#FFD700] hover:scale-110 transition-transform z-20"
+            >
+              <Calendar size={14} />
+            </button>
+            <input 
+              ref={dateInputRef}
+              type="date"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              className="w-full pl-14 pr-12 py-4 rounded-[1.5rem] bg-white border border-gray-100 shadow-sm text-[10px] font-black text-[#1A1A1A] uppercase tracking-widest focus:outline-none focus:border-[#FFD700] transition-colors cursor-pointer relative date-input-field"
+              style={{ colorScheme: 'light' }}
+            />
+            {filterDate && (
+              <button 
+                onClick={() => setFilterDate('')}
+                className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors z-20"
+                title="Clear Filter"
+              >
+                <X size={14} />
+              </button>
+            )}
+            <style dangerouslySetInnerHTML={{ __html: `
+              .date-input-field::-webkit-calendar-picker-indicator {
+                background: transparent;
+                bottom: 0;
+                color: transparent;
+                cursor: pointer;
+                height: auto;
+                left: 0;
+                position: absolute;
+                right: 0;
+                top: 0;
+                width: auto;
+                opacity: 0;
+              }
+            `}} />
+          </div>
+        </div>
+      )}
+
       {history.length === 0 ? (
         <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 p-24 text-center">
             <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
@@ -76,7 +145,20 @@ const TeacherHistory = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {history.map((session) => (
+                {history.filter(session => {
+                  const sessionClass = session.classId?.className || 'Deleted Class';
+                  const sessionMonth = new Date(session.startTime).toLocaleString('default', { month: 'long', year: 'numeric' });
+                  
+                  // Fix: Use local date parts to avoid UTC shift
+                  const d = new Date(session.startTime);
+                  const sessionDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                  
+                  const matchClass = filterClass === 'All' || sessionClass === filterClass;
+                  const matchMonth = filterMonth === 'All' || sessionMonth === filterMonth;
+                  const matchDate = !filterDate || sessionDate === filterDate;
+                  
+                  return matchClass && matchMonth && matchDate;
+                }).map((session) => (
                   <tr key={session._id} className="group hover:bg-yellow-50/20 transition-all duration-300">
                     <td className="px-10 py-6">
                       <div className="flex items-center">

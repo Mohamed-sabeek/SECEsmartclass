@@ -3,6 +3,7 @@ import { Plus, Search, X, AlertCircle, LayoutGrid, Building2, Edit2, Trash2, Fil
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import useDebounce from '../hooks/useDebounce';
+import Dropdown from './ui/Dropdown';
 
 const AdminClasses = () => {
   const [classes, setClasses] = useState([]);
@@ -187,19 +188,16 @@ const AdminClasses = () => {
               />
             </div>
             
-            <div className="min-w-[200px] flex items-center bg-white border border-gray-200 rounded-2xl px-4 py-2 shadow-sm">
-              <Filter size={18} className="text-[#FFD700] mr-3" />
-              <select 
-                className="bg-transparent border-none focus:ring-0 text-sm font-black w-full cursor-pointer uppercase tracking-tight"
-                value={filters.departmentId}
-                onChange={(e) => setFilters({...filters, departmentId: e.target.value})}
-              >
-                <option value="">All Departments</option>
-                {departments.map(dept => (
-                  <option key={dept._id} value={dept._id}>{dept.name}</option>
-                ))}
-              </select>
-            </div>
+            <Dropdown
+              value={filters.departmentId}
+              onChange={(val) => setFilters({...filters, departmentId: val})}
+              options={[
+                { label: "All Departments", value: "" },
+                ...departments.map(dept => ({ label: dept.name, value: dept._id }))
+              ]}
+              placeholder="All Departments"
+              className="min-w-[200px]"
+            />
           </div>
         </div>
 
@@ -323,25 +321,14 @@ const AdminClasses = () => {
 
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Allocated Department</label>
-                {/* 8. Dropdown Safety */}
-                <select
-                  name="departmentId"
+                <Dropdown
                   value={formData.departmentId}
-                  onChange={handleChange}
-                  className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl focus:ring-4 focus:ring-yellow-500/20 focus:bg-white transition-all text-gray-800 font-bold text-lg appearance-none cursor-pointer"
-                  required
-                >
-                  <option value="">Select Department</option>
-                  {departments.length === 0 ? (
-                    <option disabled>No departments available</option>
-                  ) : (
-                    departments.map((dept) => (
-                      <option key={dept._id} value={dept._id}>
-                        {dept.name} ({dept.code})
-                      </option>
-                    ))
-                  )}
-                </select>
+                  onChange={(val) => setFormData({...formData, departmentId: val})}
+                  options={departments.map(dept => ({ label: `${dept.name} (${dept.code})`, value: dept._id }))}
+                  placeholder="Select Department"
+                  className="w-full"
+                  buttonClassName="!rounded-2xl !py-4 !bg-gray-50 !border-none !text-lg"
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

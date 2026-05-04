@@ -27,6 +27,10 @@ const userSchema = new mongoose.Schema(
       required: true,
       default: 'student' 
     },
+    avatar: { 
+      type: String, 
+      default: "" 
+    },
     department: { type: String, trim: true },
     classId: { 
       type: mongoose.Schema.Types.ObjectId, 
@@ -43,7 +47,8 @@ const userSchema = new mongoose.Schema(
     }],
     studentDetails: {
       rollNo: { type: String, trim: true },
-      year: { type: Number },
+      admissionYear: { type: Number },
+      currentYear: { type: Number },
       _id: false
     },
     teacherDetails: {

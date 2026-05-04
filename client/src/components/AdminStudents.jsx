@@ -2,8 +2,18 @@ import { useState, useEffect, useRef } from 'react';
 import { Plus, Search, X, AlertCircle, GraduationCap, LayoutGrid, Edit2, Trash2, Upload, Filter, ChevronRight } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import defaultAvatar from '../assets/default-avatar.jpg';
+import Dropdown from './ui/Dropdown';
 import useDebounce from '../hooks/useDebounce';
 import Pagination from './common/Pagination';
+
+const getYearLabel = (year) => {
+  if (year === 1) return "1st Year";
+  if (year === 2) return "2nd Year";
+  if (year === 3) return "3rd Year";
+  if (year === 4) return "4th Year";
+  return "N/A";
+};
 
 const AdminStudents = () => {
   const [students, setStudents] = useState([]);
@@ -26,7 +36,8 @@ const AdminStudents = () => {
     email: '',
     rollNo: '',
     classId: '',
-    year: ''
+    admissionYear: '',
+    currentYear: ''
   });
 
   useEffect(() => {
@@ -97,7 +108,8 @@ const AdminStudents = () => {
       email: student.email,
       rollNo: student.studentDetails?.rollNo || '',
       classId: student.classId?._id || student.classId || '',
-      year: student.studentDetails?.year || ''
+      admissionYear: student.studentDetails?.admissionYear || '',
+      currentYear: student.studentDetails?.currentYear || ''
     });
     setShowModal(true);
   };
@@ -134,7 +146,8 @@ const AdminStudents = () => {
       const payload = {
         ...formData,
         role: 'student',
-        year: Number(formData.year)
+        admissionYear: Number(formData.admissionYear),
+        currentYear: Number(formData.currentYear)
       };
 
       if (modalMode === 'add') {
@@ -149,7 +162,7 @@ const AdminStudents = () => {
         toast.success('Student record updated successfully!');
       }
 
-      setFormData({ name: '', email: '', rollNo: '', classId: '', year: '' });
+      setFormData({ name: '', email: '', rollNo: '', classId: '', admissionYear: '', currentYear: '' });
       setShowModal(false);
       fetchStudents(1);
     } catch (err) {
@@ -225,7 +238,7 @@ const AdminStudents = () => {
           <button
             onClick={() => {
               setModalMode('add');
-              setFormData({ name: '', email: '', rollNo: '', classId: '', year: '' });
+              setFormData({ name: '', email: '', rollNo: '', classId: '', admissionYear: '', currentYear: '' });
               setShowModal(true);
             }}
             className="group flex items-center bg-[#FFD700] hover:bg-[#FFED4E] text-[#1A1A1A] px-6 py-3 rounded-xl transition-all duration-300 shadow-lg shadow-yellow-500/20 font-bold active:scale-95 text-sm"
@@ -258,33 +271,27 @@ const AdminStudents = () => {
             </div>
             
             <div className="flex flex-wrap gap-4">
-              <div className="flex items-center bg-white border border-gray-200 rounded-2xl px-4 py-2 shadow-sm min-w-[200px]">
-                <Filter size={18} className="text-[#FFD700] mr-3" />
-                <select 
-                  className="bg-transparent border-none focus:ring-0 text-sm font-black w-full cursor-pointer uppercase tracking-tight"
-                  value={filters.departmentId}
-                  onChange={(e) => setFilters({...filters, departmentId: e.target.value})}
-                >
-                  <option value="">All Departments</option>
-                  {departments.map(dept => (
-                    <option key={dept._id} value={dept.code}>{dept.name}</option>
-                  ))}
-                </select>
-              </div>
+              <Dropdown
+                value={filters.departmentId}
+                onChange={(val) => setFilters({...filters, departmentId: val})}
+                options={[
+                  { label: "All Departments", value: "" },
+                  ...departments.map(dept => ({ label: dept.name, value: dept.code }))
+                ]}
+                placeholder="All Departments"
+                className="min-w-[200px]"
+              />
 
-              <div className="flex items-center bg-white border border-gray-200 rounded-2xl px-4 py-2 shadow-sm min-w-[200px]">
-                <LayoutGrid size={18} className="text-[#FFD700] mr-3" />
-                <select 
-                  className="bg-transparent border-none focus:ring-0 text-sm font-black w-full cursor-pointer uppercase tracking-tight"
-                  value={filters.classId}
-                  onChange={(e) => setFilters({...filters, classId: e.target.value})}
-                >
-                  <option value="">All Classes</option>
-                  {classes.map(cls => (
-                    <option key={cls._id} value={cls._id}>Year {cls.year} — {cls.className}</option>
-                  ))}
-                </select>
-              </div>
+              <Dropdown
+                value={filters.classId}
+                onChange={(val) => setFilters({...filters, classId: val})}
+                options={[
+                  { label: "All Classes", value: "" },
+                  ...classes.map(cls => ({ label: `Year ${cls.year} — ${cls.className}`, value: cls._id }))
+                ]}
+                placeholder="All Classes"
+                className="min-w-[200px]"
+              />
             </div>
           </div>
         </div>
@@ -318,8 +325,15 @@ const AdminStudents = () => {
                   <tr key={student._id} className="group hover:bg-yellow-50/30 transition-all duration-300">
                     <td className="px-10 py-5">
                       <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-[#FFD700] font-black text-base mr-4 border-2 border-white shadow-sm group-hover:bg-[#FFD700] group-hover:text-[#1A1A1A] transition-colors">
-                          {student.name.charAt(0)}
+                        <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-[#FFD700] font-black text-base mr-4 border-2 border-white shadow-sm group-hover:bg-[#FFD700] group-hover:text-[#1A1A1A] transition-colors overflow-hidden">
+                          <img 
+                            src={student.avatar || defaultAvatar} 
+                            alt={student.name} 
+                            onError={(e) => {
+                              e.currentTarget.src = defaultAvatar;
+                            }}
+                            className="w-full h-full object-cover" 
+                          />
                         </div>
                         <div className="flex flex-col">
                           <span className="text-base font-bold text-[#1A1A1A]">{student.name}</span>
@@ -345,8 +359,14 @@ const AdminStudents = () => {
                     </td>
                     <td className="px-10 py-5">
                       <div className="flex flex-col">
-                        <span className="text-gray-700 font-black text-sm">Year {student.studentDetails?.year || 'N/A'}</span>
-                        <span className="text-gray-400 text-[9px] uppercase font-bold tracking-widest mt-0.5">Status: Active</span>
+                        <span className="text-gray-700 font-black text-sm">
+                          {student.studentDetails?.admissionYear 
+                            ? `${student.studentDetails.admissionYear} - ${student.studentDetails.admissionYear + 4}` 
+                            : 'N/A'}
+                        </span>
+                        <span className="text-gray-400 text-[9px] uppercase font-bold tracking-widest mt-0.5">
+                          {getYearLabel(student.studentDetails?.currentYear)}
+                        </span>
                       </div>
                     </td>
                     <td className="px-10 py-7 text-center">
@@ -445,48 +465,47 @@ const AdminStudents = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Academic Level (Year)</label>
-                  <select
-                    name="year"
-                    value={formData.year}
-                    onChange={handleChange}
-                    className="w-full px-6 py-4 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD700] focus:border-[#FFD700] transition-all font-bold text-lg appearance-none cursor-pointer"
+                  <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Admission Year</label>
+                  <input
+                    type="number"
+                    name="admissionYear"
+                    value={formData.admissionYear}
+                  className="w-full px-6 py-4 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD700] focus:border-[#FFD700] transition-all font-bold text-lg"
+                    placeholder="e.g. 2024"
                     required
-                  >
-                    <option value="">Select Level</option>
-                    <option value="1">1st Year</option>
-                    <option value="2">2nd Year</option>
-                    <option value="3">3rd Year</option>
-                    <option value="4">4th Year</option>
-                  </select>
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Current Year</label>
+                  <Dropdown
+                    value={formData.currentYear}
+                    onChange={(val) => setFormData({...formData, currentYear: val})}
+                    options={[
+                      { label: "1st Year", value: "1" },
+                      { label: "2nd Year", value: "2" },
+                      { label: "3rd Year", value: "3" },
+                      { label: "4th Year", value: "4" }
+                    ]}
+                    placeholder="Select Year"
+                    className="w-full"
+                    buttonClassName="!rounded-xl !py-4 !bg-gray-50/50 !border-gray-200 !font-bold !text-lg"
+                  />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1 text-[#FFD700]">Official Class Assignment</label>
-                <div className="relative">
-                  <select
-                    name="classId"
-                    value={formData.classId}
-                    onChange={handleChange}
-                    className="w-full px-6 py-4 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD700] focus:border-[#FFD700] transition-all font-black text-lg appearance-none cursor-pointer"
-                    required
-                  >
-                    <option value="">Select Official Class</option>
-                    {classes.length === 0 ? (
-                      <option disabled>No classes defined yet</option>
-                    ) : (
-                      classes.map(cls => (
-                        <option key={cls._id} value={cls._id}>
-                          Year {cls.year} — {cls.className} (Section {cls.section})
-                        </option>
-                      ))
-                    )}
-                  </select>
-                  <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                    <LayoutGrid size={20} />
-                  </div>
-                </div>
+                <Dropdown
+                  value={formData.classId}
+                  onChange={(val) => setFormData({...formData, classId: val})}
+                  options={classes.map(cls => ({
+                    label: `${cls.className} (${cls.section})`,
+                    value: cls._id
+                  }))}
+                  placeholder="Choose a Class"
+                  className="w-full"
+                  buttonClassName="!rounded-xl !py-4 !bg-gray-50/50 !border-gray-200 !font-black !text-lg"
+                />
               </div>
 
               <div className="pt-6">

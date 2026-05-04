@@ -1,5 +1,6 @@
 const express = require('express')
 const cors = require('cors')
+const path = require('path')
 
 const { notFound, errorHandler } = require('./middleware/errorMiddleware')
 const authRoutes = require('./routes/authRoutes')
@@ -16,6 +17,7 @@ function createApp() {
 
   app.use(cors())
   app.use(express.json())
+  app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 
   app.get('/health', (req, res) => res.json({ ok: true }))
   app.get('/api/health', (req, res) => res.json({ status: 'OK' }))

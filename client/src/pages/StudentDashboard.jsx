@@ -19,6 +19,7 @@ import StudentDashboardHome from '../components/StudentDashboardHome';
 import StudentJoinSession from '../components/StudentJoinSession';
 import StudentAttendance from '../components/StudentAttendance';
 import StudentHistory from '../components/StudentHistory';
+import StudentProfile from './student/StudentProfile';
 import { useNavigate } from 'react-router-dom';
 
 const StudentDashboard = () => {
@@ -33,7 +34,8 @@ const StudentDashboard = () => {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'join', label: 'Join Session', icon: Radio },
     { id: 'attendance', label: 'Attendance', icon: ClipboardCheck },
-    { id: 'history', label: 'History', icon: History }
+    { id: 'history', label: 'History', icon: History },
+    { id: 'profile', label: 'Profile', icon: UserIcon }
   ];
 
   useEffect(() => {
@@ -65,6 +67,8 @@ const StudentDashboard = () => {
         return <StudentAttendance />;
       case 'history':
         return <StudentHistory />;
+      case 'profile':
+        return <StudentProfile />;
       default:
         return <StudentDashboardHome user={studentData} />;
     }
@@ -105,7 +109,11 @@ const StudentDashboard = () => {
             <button
               key={item.id}
               onClick={() => {
-                setActiveTab(item.id);
+                if (item.path) {
+                  navigate(item.path);
+                } else {
+                  setActiveTab(item.id);
+                }
                 setSidebarOpen(false);
               }}
               className={`w-full group flex items-center px-6 py-4 rounded-[1.5rem] transition-all duration-500 relative overflow-hidden ${
@@ -124,17 +132,6 @@ const StudentDashboard = () => {
         </nav>
 
         <div className="p-6 mt-auto">
-          <div className="p-4 bg-gray-50 rounded-[1.5rem] border border-gray-100 mb-4">
-            <div className="flex items-center">
-              <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center font-black text-[#1A1A1A] text-sm italic">
-                {user?.name?.charAt(0)}
-              </div>
-              <div className="ml-3 overflow-hidden">
-                <p className="text-xs font-black text-gray-800 truncate">{user?.name}</p>
-                <p className="text-[10px] font-medium text-gray-500 truncate uppercase tracking-tighter">Academic Scholar</p>
-              </div>
-            </div>
-          </div>
           <button
             onClick={logout}
             className="w-full group flex items-center px-6 py-4 rounded-[1.5rem] bg-red-50 hover:bg-red-600 text-red-600 hover:text-white transition-all duration-500 shadow-sm hover:shadow-red-200 font-black active:scale-95"
@@ -165,11 +162,6 @@ const StudentDashboard = () => {
           </div>
 
           <div className="flex items-center space-x-6">
-            <div className="hidden sm:flex flex-col text-right">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Batch Code</span>
-              <span className="text-xs font-black text-[#1A1A1A] italic">{studentData?.studentDetails?.rollNo || 'GEN001'}</span>
-            </div>
-            <div className="w-px h-8 bg-gray-100 hidden sm:block"></div>
             <div className="flex items-center space-x-3">
                <Calendar size={18} className="text-[#FFD700]" />
                <span className="text-xs font-black text-[#1A1A1A] uppercase">

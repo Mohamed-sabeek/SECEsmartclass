@@ -1,7 +1,5 @@
 const path = require('path')
 require('dotenv').config({ path: path.join(__dirname, '../.env') })
-console.log('DOTENV LOADED FROM:', path.join(__dirname, '../.env'))
-console.log('ENV KEYS:', Object.keys(process.env).filter(k => k.startsWith('JITSI')))
 
 const { createApp } = require('./app')
 const { connectDB } = require('./config/db')

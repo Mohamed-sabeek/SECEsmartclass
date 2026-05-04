@@ -9,7 +9,8 @@ import {
   Menu, 
   X,
   Users,
-  Calendar
+  Calendar,
+  User as UserIcon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -23,6 +24,7 @@ import TeacherAttendance from '../components/TeacherAttendance';
 import TeacherHistory from '../components/TeacherHistory';
 import TeacherBatchRoster from '../components/TeacherBatchRoster';
 import TeacherSessionDetails from '../components/TeacherSessionDetails';
+import TeacherProfile from './teacher/TeacherProfile';
 import { useParams, useNavigate } from 'react-router-dom';
 
 const TeacherDashboard = () => {
@@ -39,7 +41,8 @@ const TeacherDashboard = () => {
     { id: 'classes', label: 'My Classes', icon: BookOpen },
     { id: 'live', label: 'Live Session', icon: Video },
     { id: 'attendance', label: 'Attendance', icon: ClipboardCheck },
-    { id: 'history', label: 'History', icon: History }
+    { id: 'history', label: 'History', icon: History },
+    { id: 'profile', label: 'Profile', icon: UserIcon }
   ];
 
   useEffect(() => {
@@ -83,6 +86,8 @@ const TeacherDashboard = () => {
         return <TeacherAttendance teacher={teacherData} />;
       case 'history':
         return <TeacherHistory />;
+      case 'profile':
+        return <TeacherProfile />;
       default:
         return <TeacherDashboardHome teacher={teacherData} setActiveTab={setActiveTab} />;
     }
@@ -123,11 +128,15 @@ const TeacherDashboard = () => {
             <button
               key={item.id}
               onClick={() => {
-                setActiveTab(item.id);
-                setSidebarOpen(false);
-                if (classId || sessionId) {
-                  navigate('/teacher');
+                if (item.path) {
+                  navigate(item.path);
+                } else {
+                  setActiveTab(item.id);
+                  if (classId || sessionId) {
+                    navigate('/teacher');
+                  }
                 }
+                setSidebarOpen(false);
               }}
               className={`w-full group flex items-center px-6 py-4 rounded-[1.5rem] transition-all duration-500 relative overflow-hidden ${
                 activeTab === item.id 
@@ -145,17 +154,6 @@ const TeacherDashboard = () => {
         </nav>
 
         <div className="p-6 mt-auto">
-          <div className="p-4 bg-gray-50 rounded-[1.5rem] border border-gray-100 mb-4">
-            <div className="flex items-center">
-              <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center font-black text-[#1A1A1A] text-sm italic">
-                {user?.name?.charAt(0)}
-              </div>
-              <div className="ml-3 overflow-hidden">
-                <p className="text-xs font-black text-gray-800 truncate">{user?.name}</p>
-                <p className="text-[10px] font-medium text-gray-500 truncate uppercase tracking-tighter">Faculty Member</p>
-              </div>
-            </div>
-          </div>
           <button
             onClick={logout}
             className="w-full group flex items-center px-6 py-4 rounded-[1.5rem] bg-red-50 hover:bg-red-600 text-red-600 hover:text-white transition-all duration-500 shadow-sm hover:shadow-red-200 font-black active:scale-95"
@@ -186,10 +184,6 @@ const TeacherDashboard = () => {
           </div>
 
           <div className="flex items-center space-x-6">
-            <div className="hidden sm:flex flex-col text-right">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Academic Year</span>
-              <span className="text-xs font-black text-[#1A1A1A] italic">2023 - 2024</span>
-            </div>
             <div className="w-px h-8 bg-gray-100 hidden sm:block"></div>
             <div className="flex items-center space-x-3">
                <Calendar size={18} className="text-[#FFD700]" />
