@@ -4,12 +4,19 @@ SECE SmartClass is a premium, real-time classroom management system designed to 
 
 ---
 
-## 🚀 Key Innovation: Real-Time Virtual Broadcasts
-The core of SECE SmartClass is its **Automated Live Session Hub**, which integrates **Jitsi JaaS (8x8.vc)** for high-fidelity video conferencing.
+## 🚀 Key Innovations
 
-*   **Zero-Code Entry**: Students are automatically notified of live broadcasts and join via a secure JWT-authenticated bridge—no session codes or manual entry required.
-*   **Role-Based Access (JWT)**: The system dynamically signs tokens to enforce classroom hierarchies. Faculty join as **Moderators** (admin controls), while students join as **Participants**.
-*   **Automated Attendance**: Presence is synchronized the moment a student enters the secure video channel, eliminating manual roll calls.
+### 1. Real-Time Virtual Broadcasts
+The core of SECE SmartClass is its **Automated Live Session Hub**, which integrates **Jitsi JaaS (8x8.vc)** for high-fidelity video conferencing.
+*   **Zero-Code Entry**: Students join via a secure JWT-authenticated bridge—no session codes required.
+*   **Role-Based Access**: System dynamically signs tokens for faculty (**Moderators**) and students (**Participants**).
+*   **Automated Attendance**: Presence is synchronized the moment a student enters the secure video channel.
+
+### 2. Cloudinary-Powered Profile Management
+A production-ready identity system for faculty and students.
+*   **Scalable Storage**: Profile images are offloaded to **Cloudinary**, ensuring fast delivery via CDN.
+*   **Automatic Overwrite**: New uploads replace old versions using the same `public_id`, keeping storage clean.
+*   **Intelligent Fallbacks**: Implements a robust local fallback system (`default-avatar.jpg`) for users without custom photos.
 
 ---
 
@@ -17,28 +24,29 @@ The core of SECE SmartClass is its **Automated Live Session Hub**, which integra
 
 ### 👨‍🏫 Faculty Dashboard
 *   **Session Command Center**: Start and manage live video broadcasts directly within the portal.
+*   **Profile Personalization**: Update identity details and profile photos with instant Cloudinary sync.
 *   **Batch Intelligence**: View assigned classes, student rosters, and real-time attendance percentages.
 *   **Historical Analytics**: Access detailed reports of past sessions and attendance trends.
-*   **Integrated Meeting Controls**: Moderate video sessions (mute, kick, record) through the secure JaaS bridge.
 
 ### 🎓 Student Dashboard
-*   **Broadcast Synchronization**: Automatically detect live classes intended for your specific batch.
+*   **Academic Archives**: Enhanced history view with real-time sync status (Present/Absent) and class metadata.
+*   **Profile Customization**: Modernized profile page with optional photo upload and "Edit Mode" state.
 *   **Participation Tracking**: View personal attendance stats and percentage across all subjects.
 *   **Direct Join**: One-click access to live video classes with automatic presence logging.
 
 ### 🔒 Administrator Portal
+*   **Directory Management**: Full CRUD controls for Students and Teachers with unified identity viewing.
 *   **Departmental Control**: Manage Departments, Classes (Batches), and Faculty assignments.
 *   **Unified Monitoring**: Overlook the entire institution's academic activity from a single pane of glass.
-*   **Identity Management**: Securely manage user roles and authentication.
 
 ---
 
 ## 💻 Tech Stack
-*   **Frontend**: React.js, Tailwind CSS, Lucide Icons, Vite (Build Tool).
-*   **Backend**: Node.js, Express.js.
+*   **Frontend**: React.js, Tailwind CSS, **Headless UI**, Lucide Icons, Vite.
+*   **Backend**: Node.js, Express.js, **Multer** (Transient storage).
+*   **Cloud Services**: **Cloudinary** (Image CDN), Jitsi JaaS (Video).
 *   **Database**: MongoDB (Mongoose ODM).
-*   **Security**: JSON Web Tokens (JWT), RS256 Asymmetric Encryption for Jitsi.
-*   **Video**: Jitsi JaaS (8x8.vc).
+*   **Security**: JWT (JSON Web Tokens), RS256 Asymmetric Encryption.
 
 ---
 
@@ -47,7 +55,7 @@ The core of SECE SmartClass is its **Automated Live Session Hub**, which integra
 ### 1. Prerequisites
 *   Node.js (v18+)
 *   MongoDB Atlas Account
-*   Jitsi JaaS (8x8.vc) Account & Private Key
+*   Jitsi JaaS Account & Cloudinary Account
 
 ### 2. Environment Setup
 Create a `.env` file in the `server/` directory:
@@ -60,6 +68,11 @@ JWT_SECRET=your_backend_auth_secret
 JITSI_APP_ID=your_jaas_app_id
 JITSI_API_KEY_ID=your_api_key_id
 JITSI_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 ```
 
 ### 3. Installation
@@ -88,13 +101,15 @@ npm run dev
 ```
 sece-smartclass/
 ├── client/              # React + Vite Frontend
-│   ├── src/components/  # Dashboard Modules
-│   └── src/pages/       # Unified Layouts
+│   ├── src/components/  # Dashboard Modules & UI components
+│   ├── src/pages/       # Unified Layouts (Student/Teacher/Admin)
+│   └── src/assets/      # Static fallbacks and branding
 ├── server/              # Express Backend
 │   ├── src/models/      # Mongoose Schemas (Session, User, Attendance)
-│   ├── src/controllers/ # API Logic
-│   └── src/routes/      # Endpoint Definitions
-└── .gitignore           # Root Security Rules
+│   ├── src/controllers/ # API Logic (Profile, Sessions, Auth)
+│   ├── src/config/      # Cloudinary & DB configurations
+│   └── src/middleware/  # Auth & File Upload (Multer) logic
+└── .gitignore           # Hardened security rules (ignores .env, uploads, temp)
 ```
 
 ---
