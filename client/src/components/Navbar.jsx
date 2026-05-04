@@ -1,6 +1,7 @@
 import { Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import seceLogo from '../assets/sece-logo.png';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -36,33 +37,41 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-gray-200">
+    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-20">
           {/* Logo */}
-          <div className="flex items-center">
-            <span className="text-2xl font-bold text-[#1A1A1A]">
-              SECE <span className="text-[#FFD700]">SmartClass</span>
+          <div 
+            className="flex items-center gap-3 cursor-pointer group"
+            onClick={() => navigate('/')}
+          >
+            <img 
+              src={seceLogo} 
+              alt="SECE Logo" 
+              className="h-12 md:h-16 w-auto object-contain" 
+            />
+            <span className="text-xl md:text-2xl text-[#1A1A1A] tracking-tight leading-none">
+              SECE <span className="font-bold text-[#FFD700]">SmartClass</span>
             </span>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center gap-8">
             <a 
               href="#features" 
               onClick={(e) => handleNavClick(e, 'features')}
-              className="text-[#1A1A1A] hover:text-[#FFD700] transition-all duration-300"
+              className="text-sm font-medium text-gray-600 hover:text-[#FFD700] transition-all duration-300"
             >
               Features
             </a>
             <a 
               href="#how-it-works" 
               onClick={(e) => handleNavClick(e, 'how-it-works')}
-              className="text-[#1A1A1A] hover:text-[#FFD700] transition-all duration-300"
+              className="text-sm font-medium text-gray-600 hover:text-[#FFD700] transition-all duration-300"
             >
               How It Works
             </a>
-            <a href="/login" className="bg-[#FFD700] hover:bg-[#FFED4E] text-white px-6 py-2 rounded-lg transition-all duration-300">
+            <a href="/login" className="bg-[#1A1A1A] hover:bg-[#FFD700] text-white hover:text-[#1A1A1A] px-6 py-2.5 rounded-xl font-bold transition-all duration-300 shadow-md active:scale-95">
               Login
             </a>
           </div>

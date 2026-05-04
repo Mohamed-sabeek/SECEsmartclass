@@ -8,7 +8,9 @@ import {
   ArrowRight,
   TrendingUp,
   Clock,
-  Award
+  Award,
+  UserCheck,
+  BarChart
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +18,7 @@ import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import FeatureCard from '../components/FeatureCard';
+import seceLogo from '../assets/sece-logo.png';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -33,205 +36,217 @@ const LandingPage = () => {
       }
     }
   }, [isAuthenticated, role, navigate]);
-  const features = [
+  const roles = [
     {
-      icon: CheckCircle,
-      title: 'Smart Attendance Tracking',
-      description: 'Automated attendance system with real-time tracking and instant notifications.'
-    },
-    {
+      title: 'For Students',
       icon: Users,
-      title: 'Live Class Monitoring',
-      description: 'Monitor active classes, student participation, and engagement in real-time.'
+      features: [
+        'View attendance percentage in real-time',
+        'Track complete class & subject history',
+        'Get instant alerts for low attendance'
+      ],
+      color: 'bg-blue-50 text-blue-600'
     },
     {
-      icon: Brain,
-      title: 'AI Insights & Reports',
-      description: 'Get intelligent insights and predictive analytics powered by AI.'
+      title: 'For Teachers',
+      icon: CheckCircle,
+      features: [
+        'Mark attendance easily with one click',
+        'Generate automated class & batch reports',
+        'Quickly identify defaulters and low engagement'
+      ],
+      color: 'bg-green-50 text-green-600'
     },
     {
+      title: 'For Admin',
       icon: Shield,
-      title: 'Role-Based Dashboards',
-      description: 'Customized dashboards for admins, teachers, and students with secure access.'
-    },
-    {
-      icon: Video,
-      title: 'Zoom Integration',
-      description: 'Seamlessly integrate with Zoom for virtual class attendance tracking.'
-    },
-    {
-      icon: BarChart3,
-      title: 'Analytics & Charts',
-      description: 'Comprehensive analytics with beautiful charts and exportable reports.'
+      features: [
+        'Manage departments, users and classes',
+        'Monitor overall institutional performance',
+        'Assign teachers and manage batch schedules'
+      ],
+      color: 'bg-purple-50 text-purple-600'
     }
   ];
 
   const steps = [
     {
       number: '01',
-      title: 'Admin Setup',
-      description: 'Configure your institution, add departments, and manage users effortlessly.'
+      title: 'Teacher Starts Class',
+      icon: UserCheck,
+      description: 'Create and start a live session for your assigned students.'
     },
     {
       number: '02',
-      title: 'Teacher Starts Class',
-      description: 'Teachers create classes, generate attendance codes, and monitor participation.'
+      title: 'Students Join Instantly',
+      icon: Users,
+      description: 'Students join via portal and attendance is tracked automatically.'
     },
     {
       number: '03',
-      title: 'Students Join & Track',
-      description: 'Students mark attendance with unique codes and track their progress.'
+      title: 'Attendance Captured',
+      icon: CheckCircle,
+      description: 'Presence is recorded securely in real-time in our database.'
+    },
+    {
+      number: '04',
+      title: 'Insights & Reports',
+      icon: BarChart,
+      description: 'View attendance percentage, trends, and defaulter alerts.'
     }
   ];
+
+  const scrollToSection = (sectionId) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
 
       {/* Hero Section */}
-      <section className="py-20 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="text-5xl md:text-6xl font-bold text-[#1A1A1A] mb-6 leading-tight">
-                Smart Attendance. <br />
-                <span className="text-[#FFD700]">Powerful Insights.</span>
-              </h1>
-              <p className="text-xl text-gray-600 mb-8">
-                Track, analyze, and optimize classroom attendance with AI-powered analytics.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button className="bg-[#FFD700] hover:bg-[#FFED4E] text-white px-8 py-4 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center">
-                  Get Started
-                  <ArrowRight className="ml-2" size={20} />
-                </button>
-                <button className="border-2 border-[#FFD700] text-[#FFD700] hover:bg-[#FFD700] hover:text-white px-8 py-4 rounded-lg font-semibold transition-all duration-300">
-                  View Demo
-                </button>
-              </div>
-            </div>
-            <div className="bg-[#F5F5F5] rounded-2xl p-8 h-96 flex items-center justify-center shadow-lg">
-              <div className="text-center">
-                <BarChart3 className="text-[#FFD700] mx-auto mb-4" size={64} />
-                <p className="text-gray-600 font-semibold">Dashboard Preview</p>
-              </div>
+      <section className="py-24 md:py-32 px-6 relative overflow-hidden">
+
+        <div className="max-w-7xl mx-auto relative z-10 text-center flex flex-col items-center">
+          <div className="max-w-4xl mx-auto">
+            <h1 className="text-6xl md:text-8xl font-black text-[#1A1A1A] mb-10 leading-[1.1] tracking-tight">
+              Smart Classroom <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FFD700] to-[#FFA500]">
+                Management for SECE.
+              </span>
+            </h1>
+            <p className="text-xl md:text-3xl text-gray-500 mb-12 leading-relaxed font-medium max-w-2xl mx-auto">
+              Track attendance, monitor performance, and manage classes efficiently—built specifically for Students, Teachers, and Admins.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-6 justify-center">
+              <button 
+                onClick={() => navigate('/login')}
+                className="bg-[#1A1A1A] hover:bg-[#FFD700] text-white hover:text-[#1A1A1A] px-12 py-6 rounded-2xl font-bold text-xl transition-all duration-300 flex items-center justify-center shadow-xl hover:scale-105 active:scale-95"
+              >
+                Login to Dashboard
+                <ArrowRight className="ml-2" size={28} />
+              </button>
+              <button 
+                onClick={() => scrollToSection('features')}
+                className="bg-white border-2 border-gray-100 text-[#1A1A1A] hover:border-[#FFD700] px-12 py-6 rounded-2xl font-bold text-xl transition-all duration-300 shadow-lg hover:scale-105 active:scale-95"
+              >
+                Explore Features
+              </button>
             </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-16 px-6 bg-[#F5F5F5]">
+      <section id="features" className="py-24 md:py-32 px-6 bg-[#FBFBFB] border-y border-gray-50">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-[#1A1A1A] mb-4">
-              Everything You Need
+          <div className="text-center mb-20">
+            <span className="text-[#FFD700] font-black tracking-[0.2em] uppercase text-sm mb-4 block">
+              Roles & Capabilities
+            </span>
+            <h2 className="text-4xl md:text-5xl font-black text-[#1A1A1A] mb-6 tracking-tight">
+              Built for Every User
             </h2>
-            <p className="text-xl text-gray-600">
-              Powerful features designed for modern classrooms
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <FeatureCard
-                key={index}
-                icon={feature.icon}
-                title={feature.title}
-                description={feature.description}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section id="how-it-works" className="py-16 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-[#1A1A1A] mb-4">
-              How It Works
-            </h2>
-            <p className="text-xl text-gray-600">
-              Get started in three simple steps
+            <div className="w-20 h-1.5 bg-[#FFD700] mx-auto rounded-full mb-8"></div>
+            <p className="text-xl text-gray-500 font-medium max-w-2xl mx-auto leading-relaxed">
+              Tailored dashboards and tools designed specifically for students, faculty, and administration.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {steps.map((step, index) => (
-              <div key={index} className="text-center">
-                <div className="w-16 h-16 bg-[#FFD700] text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
-                  {step.number}
+            {roles.map((roleItem, index) => (
+              <div key={index} className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-gray-50 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 group">
+                <div className={`w-16 h-16 ${roleItem.color} rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500`}>
+                  <roleItem.icon size={32} />
                 </div>
-                <h3 className="text-2xl font-semibold text-[#1A1A1A] mb-3">
-                  {step.title}
-                </h3>
-                <p className="text-gray-600">
-                  {step.description}
-                </p>
+                <h3 className="text-2xl font-black text-[#1A1A1A] mb-6 tracking-tight">{roleItem.title}</h3>
+                <ul className="space-y-4">
+                  {roleItem.features.map((f, i) => (
+                    <li key={i} className="flex items-start gap-3 text-gray-500 font-medium leading-relaxed">
+                      <CheckCircle className="text-green-500 mt-1 shrink-0" size={18} />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Dashboard Preview Section */}
-      <section className="py-16 px-6 bg-[#F5F5F5]">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-[#1A1A1A] mb-4">
-              Real-Time Dashboard
+      {/* How It Works Section */}
+      <section id="how-it-works" className="py-24 md:py-32 px-6 bg-white relative overflow-hidden">
+        <div className="max-w-7xl mx-auto relative">
+          <div className="text-center mb-24">
+            <span className="text-[#FFD700] font-black tracking-[0.2em] uppercase text-sm mb-4 block">
+              Workflow
+            </span>
+            <h2 className="text-4xl md:text-5xl font-black text-[#1A1A1A] mb-6 tracking-tight">
+              Classroom Flow
             </h2>
-            <p className="text-xl text-gray-600">
-              Monitor everything at a glance
+            <div className="w-20 h-1.5 bg-[#FFD700] mx-auto rounded-full mb-8"></div>
+            <p className="text-xl text-gray-500 font-medium max-w-2xl mx-auto leading-relaxed">
+              Our seamless orchestration ensures that attendance is the least of your worries.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-8 rounded-2xl shadow-md">
-              <TrendingUp className="text-[#FFD700] mb-4" size={32} />
-              <h3 className="text-3xl font-bold text-[#1A1A1A] mb-2">94.5%</h3>
-              <p className="text-gray-600">Average Attendance</p>
+
+          {/* Timeline Container */}
+          <div className="relative">
+            {/* Desktop Connecting Line */}
+            <div className="hidden md:block absolute top-1/2 left-0 w-full h-1 bg-gray-100 -translate-y-1/2 z-0">
+              <div className="w-full h-full bg-gradient-to-r from-[#FFD700] to-[#FFA500] opacity-20"></div>
             </div>
-            <div className="bg-white p-8 rounded-2xl shadow-md">
-              <Clock className="text-[#FFD700] mb-4" size={32} />
-              <h3 className="text-3xl font-bold text-[#1A1A1A] mb-2">24/7</h3>
-              <p className="text-gray-600">Real-Time Tracking</p>
+
+            {/* Mobile Connecting Line */}
+            <div className="md:hidden absolute left-8 top-0 h-full w-1 bg-gray-100 z-0">
+              <div className="h-full w-full bg-gradient-to-b from-[#FFD700] to-[#FFA500] opacity-20"></div>
             </div>
-            <div className="bg-white p-8 rounded-2xl shadow-md">
-              <Award className="text-[#FFD700] mb-4" size={32} />
-              <h3 className="text-3xl font-bold text-[#1A1A1A] mb-2">1,200+</h3>
-              <p className="text-gray-600">Active Students</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-12 relative z-10">
+              {steps.map((step, index) => (
+                <div key={index} className="group">
+                  <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 relative h-full">
+                    {/* Step Number Circle */}
+                    <div className="absolute -top-6 left-8 w-12 h-12 bg-[#1A1A1A] text-[#FFD700] rounded-2xl flex items-center justify-center text-xl font-black shadow-xl group-hover:bg-[#FFD700] group-hover:text-[#1A1A1A] transition-colors duration-300">
+                      {step.number}
+                    </div>
+
+                    <div className="mt-4 mb-6 w-16 h-16 bg-[#FFD700]/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                      <step.icon className="text-[#FFD700]" size={32} />
+                    </div>
+
+                    <h3 className="text-xl font-black text-[#1A1A1A] mb-4 tracking-tight leading-tight">
+                      {step.title}
+                    </h3>
+                    <p className="text-gray-500 font-medium leading-relaxed text-sm">
+                      {step.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* AI Insights Section */}
-      <section className="py-16 px-6 bg-gradient-to-br from-[#FFD700] to-[#FFED4E]">
-        <div className="max-w-7xl mx-auto text-center">
-          <Brain className="text-white mx-auto mb-6" size={64} />
-          <h2 className="text-4xl font-bold text-white mb-4">
-            AI-Powered Insights
-          </h2>
-          <p className="text-xl text-white mb-8 max-w-2xl mx-auto">
-            Leverage artificial intelligence to predict attendance patterns, identify at-risk students, and optimize classroom engagement.
-          </p>
-          <button className="bg-white text-[#FFD700] hover:bg-gray-100 px-8 py-4 rounded-lg font-semibold transition-all duration-300">
-            Explore AI Features
-          </button>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-6">
+      <section className="py-24 md:py-32 px-6 bg-white">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-[#1A1A1A] mb-6">
-            Start building smarter classrooms today
+          <h2 className="text-4xl md:text-6xl font-black text-[#1A1A1A] mb-6 tracking-tighter leading-tight">
+            Track Attendance. <br />
+            <span className="text-[#FFD700]">Stay Above 75%.</span>
           </h2>
-          <p className="text-xl text-gray-600 mb-8">
-            Join hundreds of institutions transforming their attendance management
+          <p className="text-xl text-gray-600 mt-4 mb-10 font-medium leading-relaxed max-w-2xl mx-auto">
+            SECE SmartClass helps students and teachers track attendance, manage classes, and monitor performance easily.
           </p>
-          <button className="bg-[#FFD700] hover:bg-[#FFED4E] text-white px-10 py-4 rounded-lg font-semibold text-lg transition-all duration-300 inline-flex items-center">
-            Get Started Now
-            <ArrowRight className="ml-2" size={20} />
+          <button 
+            onClick={() => navigate('/login')}
+            className="bg-[#1A1A1A] hover:bg-[#FFD700] text-white hover:text-[#1A1A1A] px-12 py-5 rounded-2xl font-black text-xl transition-all duration-300 shadow-xl hover:scale-105 active:scale-95 flex items-center mx-auto"
+          >
+            Login to Dashboard
+            <ArrowRight className="ml-3" size={28} />
           </button>
         </div>
       </section>

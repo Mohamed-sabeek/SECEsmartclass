@@ -5,11 +5,11 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Logo & Description */}
           <div className="col-span-1 md:col-span-2">
-            <h3 className="text-2xl font-bold mb-4">
+            <h3 className="text-2xl font-black text-white mb-4 tracking-tighter leading-none">
               SECE <span className="text-[#FFD700]">SmartClass</span>
             </h3>
-            <p className="text-gray-400 mb-4">
-              Smart Attendance & Class Analytics System for modern educational institutions.
+            <p className="text-gray-400 font-medium leading-relaxed max-w-sm">
+              The next generation of academic orchestration and real-time institutional analytics.
             </p>
           </div>
 

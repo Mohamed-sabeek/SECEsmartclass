@@ -3,6 +3,7 @@ import { LogIn, Mail, Lock, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-rea
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import seceLogo from '../assets/sece-logo.png';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -83,11 +84,16 @@ const LoginPage = () => {
     <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center px-6 py-12">
       <div className="max-w-md w-full">
         {/* Logo/Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-[#1A1A1A] mb-2">
+        <div className="text-center mb-8 flex flex-col items-center">
+          <img 
+            src={seceLogo} 
+            alt="SECE Logo" 
+            className="h-20 md:h-24 w-auto mb-6 object-contain" 
+          />
+          <h1 className="text-3xl font-black text-[#1A1A1A] mb-2 tracking-tighter">
             SECE <span className="text-[#FFD700]">SmartClass</span>
           </h1>
-          <p className="text-gray-600">Sign in to your account</p>
+          <p className="text-gray-600 font-medium">Sign in to your account</p>
         </div>
 
         {/* Login Card */}
