@@ -15,24 +15,27 @@ const studentRoutes = require('./routes/studentRoutes')
 function createApp() {
   const app = express()
 
-  // Dynamic CORS Configuration
+  // CORS Configuration
   const allowedOrigins = [
-    'http://localhost:5173',
-    process.env.CLIENT_URL
-  ].filter(Boolean)
+    "http://localhost:5173",
+    "https://sec-esmartclass.vercel.app"
+  ];
 
-  app.use(cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true)
-      if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
-        callback(null, true)
-      } else {
-        callback(new Error('Not allowed by CORS'))
-      }
-    },
-    credentials: true
-  }))
+  app.use(
+    cors({
+      origin: function (origin, callback) {
+        // allow requests with no origin (like Postman or mobile apps)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
+          return callback(null, true);
+        } else {
+          return callback(new Error("Not allowed by CORS"));
+        }
+      },
+      credentials: true,
+    })
+  );
 
   app.use(express.json())
   app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
