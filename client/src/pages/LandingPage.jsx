@@ -115,7 +115,7 @@ const LandingPage = () => {
             <h1 className="text-6xl md:text-8xl font-black text-[#1A1A1A] mb-10 leading-[1.1] tracking-tight">
               Smart Classroom <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FFD700] to-[#FFA500]">
-                Management for SECE.
+                Management for SECE
               </span>
             </h1>
             <p className="text-xl md:text-3xl text-gray-500 mb-12 leading-relaxed font-medium max-w-2xl mx-auto">

@@ -8,7 +8,8 @@ import {
   Menu, 
   X,
   Calendar,
-  User as UserIcon
+  User as UserIcon,
+  Users
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -19,6 +20,7 @@ import StudentDashboardHome from '../components/StudentDashboardHome';
 import StudentJoinSession from '../components/StudentJoinSession';
 import StudentAttendance from '../components/StudentAttendance';
 import StudentHistory from '../components/StudentHistory';
+import StudentTeachers from '../components/StudentTeachers';
 import StudentProfile from './student/StudentProfile';
 import { useNavigate } from 'react-router-dom';
 
@@ -35,6 +37,7 @@ const StudentDashboard = () => {
     { id: 'join', label: 'Join Session', icon: Radio },
     { id: 'attendance', label: 'Attendance', icon: ClipboardCheck },
     { id: 'history', label: 'History', icon: History },
+    { id: 'teachers', label: 'My Teachers', icon: Users },
     { id: 'profile', label: 'Profile', icon: UserIcon }
   ];
 
@@ -67,6 +70,8 @@ const StudentDashboard = () => {
         return <StudentAttendance />;
       case 'history':
         return <StudentHistory />;
+      case 'teachers':
+        return <StudentTeachers />;
       case 'profile':
         return <StudentProfile />;
       default:

@@ -114,4 +114,4 @@ sece-smartclass/
 
 ---
 
-© 2024 SECE SmartClass. Powering the next generation of academic excellence.
+© 2026 SECE SmartClass. Powering the next generation of academic excellence.

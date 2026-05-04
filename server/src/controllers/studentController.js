@@ -146,8 +146,45 @@ const getStudentHistory = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc Get teachers assigned to student's class
+// @route GET /api/student/teachers
+// @access Private (Student)
+const getStudentTeachers = asyncHandler(async (req, res) => {
+  try {
+    const studentId = req.user.id;
+    const student = await User.findById(studentId);
+
+    if (!student || !student.classId) {
+      return res.status(200).json({ success: true, data: [] });
+    }
+
+    // Find teachers whose assignedClasses array contains the student's classId
+    const teachers = await User.find({
+      role: 'teacher',
+      assignedClasses: student.classId
+    }).select('name email avatar teacherDetails');
+
+    const result = teachers.map(teacher => ({
+      _id: teacher._id,
+      name: teacher.name,
+      email: teacher.email,
+      avatar: teacher.avatar,
+      subject: teacher.teacherDetails?.subject || 'N/A'
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('STUDENT TEACHERS ERROR:', error.message);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 module.exports = {
   getStudentDashboard,
   getStudentAttendance,
-  getStudentHistory
+  getStudentHistory,
+  getStudentTeachers
 };
