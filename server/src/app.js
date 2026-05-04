@@ -15,10 +15,32 @@ const studentRoutes = require('./routes/studentRoutes')
 function createApp() {
   const app = express()
 
-  app.use(cors())
+  // Dynamic CORS Configuration
+  const allowedOrigins = [
+    'http://localhost:5173',
+    process.env.CLIENT_URL
+  ].filter(Boolean)
+
+  app.use(cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true)
+      if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+        callback(null, true)
+      } else {
+        callback(new Error('Not allowed by CORS'))
+      }
+    },
+    credentials: true
+  }))
+
   app.use(express.json())
   app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 
+  // Root Routes
+  app.get('/', (req, res) => {
+    res.json({ success: true, message: "API is running 🚀" })
+  })
   app.get('/health', (req, res) => res.json({ ok: true }))
   app.get('/api/health', (req, res) => res.json({ status: 'OK' }))
 
@@ -32,16 +54,7 @@ function createApp() {
   app.use('/api/student', studentRoutes)
 
   app.use(notFound)
-  
-  // GLOBAL ERROR HANDLER - MUST BE LAST
-  app.use((err, req, res, next) => {
-    console.error('GLOBAL ERROR:', err.stack);
-    res.status(500).json({ 
-      success: false,
-      message: 'Something went wrong on the server',
-      error: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
-  });
+  app.use(errorHandler)
 
   return app
 }
