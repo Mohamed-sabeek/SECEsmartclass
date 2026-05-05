@@ -81,9 +81,15 @@ const startSession = asyncHandler(async (req, res) => {
         const emailTasks = students
           .filter(s => s.email)
           .map(student => {
-            console.log(`📤 Attempting email to: ${student.email}`);
+            // TEMPORARY: Resend sandbox mode restriction (only verified emails allowed)
+            // Redirects all emails to your verified account for demo/testing
+            const DEMO_RECIPIENT = process.env.DEMO_EMAIL || student.email;
+            
+            console.log(`📤 Original student: ${student.email}`);
+            console.log(`📤 Sending to (Resend Sandbox): ${DEMO_RECIPIENT}`);
+
             return sendEmail({
-              to: student.email,
+              to: DEMO_RECIPIENT,
               subject: `LIVE Class Started: ${subject}`,
               html: sessionStartTemplate({
                 subject,
@@ -97,9 +103,9 @@ const startSession = asyncHandler(async (req, res) => {
                 joinUrl: `${process.env.CLIENT_URL || 'http://localhost:5173'}/student/live`
               })
             }).then(() => {
-              console.log(`✅ Email sent successfully to: ${student.email}`);
+              console.log(`✅ Notification dispatched for ${student.name} (sent to ${DEMO_RECIPIENT})`);
             }).catch(err => {
-              console.error(`❌ Failed to send email to ${student.email}:`, err.message);
+              console.error(`❌ Failed to send to ${DEMO_RECIPIENT}:`, err.message);
             });
           });
 
