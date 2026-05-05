@@ -1,49 +1,33 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require('resend');
 
 /**
- * Configure Nodemailer transporter with IPv4 force (fix for Render ENETUNREACH)
+ * Initialize Resend client
+ * Uses API-based delivery to bypass cloud SMTP restrictions (ENETUNREACH)
  */
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // true for 465, false for other ports
-  family: 4,     // 🔥 FORCE IPv4 - Critical for Render compatibility
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  tls: {
-    rejectUnauthorized: false // Helps with some network environments
-  }
-});
-
-// Verify connection configuration
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("❌ SMTP Connection Error:", error.message);
-  } else {
-    console.log("✅ SMTP Server is ready to send emails (IPv4 Forced)");
-  }
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
- * Send an email
+ * Send an email using Resend API
  * @param {Object} options - to, subject, html
  */
 const sendEmail = async ({ to, subject, html }) => {
   try {
-    const info = await transporter.sendMail({
-      from: `"SECE SmartClass" <${process.env.EMAIL_USER}>`,
+    const { data, error } = await resend.emails.send({
+      from: 'SECE SmartClass <onboarding@resend.dev>',
       to,
       subject,
       html
     });
-    console.log("✅ Email dispatched:", info.response);
-    return info;
+
+    if (error) {
+      console.error("❌ Resend API Error:", error.message);
+      return null;
+    }
+
+    console.log("✅ Email sent via Resend:", data.id);
+    return data;
   } catch (error) {
-    console.error("❌ Email dispatch failed:", error.message);
-    // Don't throw error here to prevent blocking main flow, 
-    // but log it for debugging
+    console.error("❌ Resend Dispatch Failed:", error.message);
     return null;
   }
 };
