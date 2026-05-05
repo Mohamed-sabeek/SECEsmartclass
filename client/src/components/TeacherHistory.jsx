@@ -4,31 +4,46 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Dropdown from './ui/Dropdown';
 
-const TeacherHistory = () => {
+const TeacherHistory = ({ teacher }) => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterClass, setFilterClass] = useState('All');
-  const [filterMonth, setFilterMonth] = useState('All');
-  const [filterDate, setFilterDate] = useState('');
+  const [filters, setFilters] = useState({
+    classId: '',
+    subject: '',
+    month: '',
+    date: ''
+  });
   const dateInputRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchHistory();
-  }, []);
+  }, [filters]);
 
   const fetchHistory = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem('token');
       const response = await axios.get('/api/sessions/history', {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        params: filters
       });
       setHistory(response.data.data);
     } catch (error) {
       console.error('Error fetching history:', error);
+      toast.error('Failed to load history');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleReset = () => {
+    setFilters({
+      classId: '',
+      subject: '',
+      month: '',
+      date: ''
+    });
   };
 
   const handleViewDetails = (id) => {
@@ -44,97 +59,168 @@ const TeacherHistory = () => {
     return mins > 0 ? `${mins} mins ${secs} secs` : `${secs} secs`;
   };
 
-  if (loading) {
-    return (
-      <div className="h-96 flex items-center justify-center bg-white rounded-[2.5rem] border border-gray-100 shadow-sm">
-        <Loader2 className="animate-spin text-[#FFD700]" size={40} />
-      </div>
-    );
-  }
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  const yearOptions = [new Date().getFullYear(), new Date().getFullYear() - 1];
+  const monthOptions = yearOptions.flatMap(year => 
+    months.map(month => ({
+      label: `${month} ${year}`,
+      value: `${month} ${year}`
+    }))
+  );
+
+  const activeFilterCount = Object.values(filters).filter(v => v !== '').length;
 
   return (
     <div className="animate-in slide-in-from-bottom duration-700">
-      <div className="mb-10">
-        <h2 className="text-3xl font-black text-[#1A1A1A] tracking-tighter">
-          Academic <span className="text-[#FFD700]">Artifacts</span>
-        </h2>
-        <p className="text-gray-500 mt-2 font-medium italic">Log of all previously broadcasted sessions and teaching records</p>
+      <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h2 className="text-3xl font-black text-[#1A1A1A] tracking-tighter">
+            Academic <span className="text-[#FFD700]">Artifacts</span>
+          </h2>
+          <p className="text-gray-500 mt-2 font-medium italic text-sm">Log of all previously broadcasted sessions and teaching records</p>
+        </div>
+        {activeFilterCount > 0 && (
+          <button 
+            onClick={handleReset}
+            className="flex items-center space-x-2 px-6 py-3 bg-gray-100 hover:bg-[#FFD700] text-gray-500 hover:text-[#1A1A1A] rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-sm"
+          >
+            <X size={14} />
+            <span>Reset Filters</span>
+          </button>
+        )}
       </div>
 
-      {!loading && history.length > 0 && (
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
-          <Dropdown
-            value={filterClass}
-            onChange={setFilterClass}
-            options={['All', ...new Set(history.map(s => s.classId?.className || 'Deleted Class'))].map(cls => ({
-              label: cls === 'All' ? 'All Classes' : cls,
-              value: cls
-            }))}
-            className="md:w-64"
-          />
-          <Dropdown
-            value={filterMonth}
-            onChange={setFilterMonth}
-            options={['All', ...new Set(history.map(s => new Date(s.startTime).toLocaleString('default', { month: 'long', year: 'numeric' })))].map(month => ({
-              label: month === 'All' ? 'All Months' : month,
-              value: month
-            }))}
-            className="md:w-64"
-          />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <Dropdown
+          value={filters.classId}
+          onChange={(val) => setFilters(prev => ({ ...prev, classId: val }))}
+          options={[
+            { label: 'All Classes', value: '' },
+            ...(teacher?.assignedClasses?.map(cls => ({
+              label: `${cls.className} (${cls.section})`,
+              value: cls._id
+            })) || [])
+          ]}
+          placeholder="Filter by Class"
+        />
+        <Dropdown
+          value={filters.subject}
+          onChange={(val) => setFilters(prev => ({ ...prev, subject: val }))}
+          options={[
+            { label: 'All Subjects', value: '' },
+            ...(teacher?.teacherDetails?.subjects?.map(sub => ({
+              label: sub,
+              value: sub
+            })) || [])
+          ]}
+          placeholder="Filter by Subject"
+        />
+        <Dropdown
+          value={filters.month}
+          onChange={(val) => setFilters(prev => ({ ...prev, month: val }))}
+          options={[
+            { label: 'All Months', value: '' },
+            ...monthOptions
+          ]}
+          placeholder="Filter by Month"
+        />
 
-          <div className="flex-1 relative group">
-            <button 
-              onClick={() => dateInputRef.current?.showPicker?.() || dateInputRef.current?.click()}
-              className="absolute left-6 top-1/2 -translate-y-1/2 text-[#FFD700] hover:scale-110 transition-transform z-20"
-            >
-              <Calendar size={14} />
-            </button>
-            <input 
-              ref={dateInputRef}
-              type="date"
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-              className="w-full pl-14 pr-12 py-4 rounded-[1.5rem] bg-white border border-gray-100 shadow-sm text-[10px] font-black text-[#1A1A1A] uppercase tracking-widest focus:outline-none focus:border-[#FFD700] transition-colors cursor-pointer relative date-input-field"
-              style={{ colorScheme: 'light' }}
-            />
-            {filterDate && (
-              <button 
-                onClick={() => setFilterDate('')}
-                className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors z-20"
-                title="Clear Filter"
-              >
-                <X size={14} />
-              </button>
-            )}
-            <style dangerouslySetInnerHTML={{ __html: `
-              .date-input-field::-webkit-calendar-picker-indicator {
-                background: transparent;
-                bottom: 0;
-                color: transparent;
-                cursor: pointer;
-                height: auto;
-                left: 0;
-                position: absolute;
-                right: 0;
-                top: 0;
-                width: auto;
-                opacity: 0;
-              }
-            `}} />
-          </div>
+        <div className="relative group">
+          <button 
+            onClick={() => dateInputRef.current?.showPicker?.() || dateInputRef.current?.click()}
+            className="absolute left-6 top-1/2 -translate-y-1/2 text-[#FFD700] hover:scale-110 transition-transform z-20"
+          >
+            <Calendar size={14} />
+          </button>
+          <input 
+            ref={dateInputRef}
+            type="date"
+            value={filters.date}
+            onChange={(e) => setFilters(prev => ({ ...prev, date: e.target.value }))}
+            className="w-full pl-14 pr-6 py-4 rounded-[1.5rem] bg-white border border-gray-100 shadow-sm text-[10px] font-black text-[#1A1A1A] uppercase tracking-widest focus:outline-none focus:border-[#FFD700] transition-colors cursor-pointer relative date-input-field"
+            style={{ colorScheme: 'light' }}
+          />
+          <style dangerouslySetInnerHTML={{ __html: `
+            .date-input-field::-webkit-calendar-picker-indicator {
+              background: transparent;
+              bottom: 0;
+              color: transparent;
+              cursor: pointer;
+              height: auto;
+              left: 0;
+              position: absolute;
+              right: 0;
+              top: 0;
+              width: auto;
+              opacity: 0;
+            }
+          `}} />
+        </div>
+      </div>
+
+      {/* Active Filter Tags */}
+      {activeFilterCount > 0 && (
+        <div className="flex flex-wrap gap-2 mb-8 animate-in fade-in duration-500">
+           {filters.classId && (
+             <span className="flex items-center space-x-2 px-4 py-2 bg-[#1A1A1A] text-[#FFD700] rounded-xl text-[9px] font-black uppercase tracking-widest italic">
+                <span>Class: {teacher?.assignedClasses?.find(c => c._id === filters.classId)?.className}</span>
+                <button onClick={() => setFilters(prev => ({ ...prev, classId: '' }))}><X size={10} /></button>
+             </span>
+           )}
+           {filters.subject && (
+             <span className="flex items-center space-x-2 px-4 py-2 bg-[#1A1A1A] text-[#FFD700] rounded-xl text-[9px] font-black uppercase tracking-widest italic">
+                <span>Subject: {filters.subject}</span>
+                <button onClick={() => setFilters(prev => ({ ...prev, subject: '' }))}><X size={10} /></button>
+             </span>
+           )}
+           {filters.month && (
+             <span className="flex items-center space-x-2 px-4 py-2 bg-[#1A1A1A] text-[#FFD700] rounded-xl text-[9px] font-black uppercase tracking-widest italic">
+                <span>Month: {filters.month}</span>
+                <button onClick={() => setFilters(prev => ({ ...prev, month: '' }))}><X size={10} /></button>
+             </span>
+           )}
+           {filters.date && (
+             <span className="flex items-center space-x-2 px-4 py-2 bg-[#1A1A1A] text-[#FFD700] rounded-xl text-[9px] font-black uppercase tracking-widest italic">
+                <span>Date: {filters.date}</span>
+                <button onClick={() => setFilters(prev => ({ ...prev, date: '' }))}><X size={10} /></button>
+             </span>
+           )}
         </div>
       )}
 
-      {history.length === 0 ? (
+      {loading ? (
+        <div className="h-96 flex flex-col items-center justify-center bg-white rounded-[2.5rem] border border-gray-100 shadow-sm">
+           <Loader2 className="animate-spin text-[#FFD700] mb-4" size={40} />
+           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Syncing with academic archives...</p>
+        </div>
+      ) : history.length === 0 ? (
         <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 p-24 text-center">
             <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
                <History className="text-gray-300" size={40} />
             </div>
-            <h3 className="text-2xl font-black text-[#1A1A1A] mb-2 tracking-tight">Archives Empty</h3>
-            <p className="text-gray-500 max-w-sm mx-auto font-medium italic text-lg">Your academic teaching history will appear here once you complete your first broadcast session.</p>
+            <h3 className="text-2xl font-black text-[#1A1A1A] mb-2 tracking-tight">
+              {activeFilterCount > 0 ? "No Sessions Found" : "Archives Empty"}
+            </h3>
+            <p className="text-gray-500 max-w-sm mx-auto font-medium italic text-lg leading-snug">
+              {activeFilterCount > 0 
+                ? "Try adjusting your filters to find the specific session you're looking for." 
+                : "Your academic teaching history will appear here once you complete your first broadcast session."}
+            </p>
+            {activeFilterCount > 0 && (
+              <button 
+                onClick={handleReset}
+                className="mt-8 text-[#FFD700] font-black uppercase tracking-widest text-xs hover:underline underline-offset-4"
+              >
+                Clear all filters
+              </button>
+            )}
         </div>
       ) : (
-        <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden mb-10">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -148,20 +234,7 @@ const TeacherHistory = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {history.filter(session => {
-                  const sessionClass = session.classId?.className || 'Deleted Class';
-                  const sessionMonth = new Date(session.startTime).toLocaleString('default', { month: 'long', year: 'numeric' });
-                  
-                  // Fix: Use local date parts to avoid UTC shift
-                  const d = new Date(session.startTime);
-                  const sessionDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                  
-                  const matchClass = filterClass === 'All' || sessionClass === filterClass;
-                  const matchMonth = filterMonth === 'All' || sessionMonth === filterMonth;
-                  const matchDate = !filterDate || sessionDate === filterDate;
-                  
-                  return matchClass && matchMonth && matchDate;
-                }).map((session) => (
+                {history.map((session) => (
                   <tr key={session._id} className="group hover:bg-yellow-50/20 transition-all duration-300">
                     <td className="px-10 py-6">
                       <div className="flex items-center">
@@ -170,7 +243,11 @@ const TeacherHistory = () => {
                         </div>
                         <div>
                           <p className="text-sm font-black text-gray-800 uppercase tracking-tight">{session.classId?.className || 'Deleted Class'}</p>
-                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{session.classId?.year} Year — {session.classId?.section}</p>
+                          <div className="flex items-center space-x-2 mt-1">
+                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{session.classId?.year} Year — {session.classId?.section}</span>
+                             <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                             <span className="text-[10px] font-black text-[#FFD700] uppercase italic">{session.subject}</span>
+                          </div>
                         </div>
                       </div>
                     </td>

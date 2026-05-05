@@ -146,7 +146,29 @@ const endSession = asyncHandler(async (req, res) => {
 // @access Private (Teacher)
 const getTeacherHistory = asyncHandler(async (req, res) => {
   try {
-    const sessions = await Session.find({ teacherId: req.user.id })
+    const { classId, subject, month, date } = req.query;
+    const query = { teacherId: req.user.id };
+
+    if (classId) query.classId = classId;
+    if (subject) query.subject = subject;
+    
+    if (month) {
+      const [monthName, year] = month.split(' ');
+      const monthIndex = new Date(Date.parse(monthName + " 1, 2024")).getMonth();
+      const startOfMonth = new Date(year, monthIndex, 1);
+      const endOfMonth = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999);
+      query.startTime = { $gte: startOfMonth, $lte: endOfMonth };
+    }
+
+    if (date) {
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+      query.startTime = { $gte: startOfDay, $lte: endOfDay };
+    }
+
+    const sessions = await Session.find(query)
       .populate('classId', 'className year section')
       .sort({ createdAt: -1 });
 

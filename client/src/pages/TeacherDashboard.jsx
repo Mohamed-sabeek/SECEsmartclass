@@ -114,7 +114,7 @@ const TeacherDashboard = () => {
       case 'attendance':
         return <TeacherAttendance teacher={teacherData} />;
       case 'history':
-        return <TeacherHistory />;
+        return <TeacherHistory teacher={teacherData} />;
       case 'profile':
         return <TeacherProfile />;
       default:
