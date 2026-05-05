@@ -79,7 +79,7 @@ const TeacherBatchRoster = () => {
           </h2>
           <p className="text-gray-500 mt-2 font-medium italic uppercase tracking-widest text-[10px]">
             {classInfo ? (
-              `${classInfo.className} — Batch ${new Date().getFullYear() - (classInfo.year || 1) + 1}-${new Date().getFullYear() - (classInfo.year || 1) + 5} (Section ${classInfo.section || 'N/A'})`
+              `${classInfo.className} — Batch ${new Date().getFullYear() - (classInfo.year || 1)} - ${new Date().getFullYear() - (classInfo.year || 1) + 4}${classInfo.section && classInfo.section !== 'NA' ? ` (Section ${classInfo.section})` : ''}`
             ) : (
               'Viewing student roll call'
             )}

@@ -1,18 +1,28 @@
-import { useState, useEffect } from 'react';
-import { Video, Zap, Clock, Users, Play, Square, Loader2, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Video, Zap, Clock, Users, Play, Square, Loader2, AlertCircle, BookOpen } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import Dropdown from './ui/Dropdown';
 
 const TeacherLiveSession = ({ teacher }) => {
+  const navigate = useNavigate();
   const [activeSession, setActiveSession] = useState(null);
-  const [meetingUrl, setMeetingUrl] = useState('');
+  const [jitsiData, setJitsiData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedClass, setSelectedClass] = useState('');
+  const [subject, setSubject] = useState('');
+  const jitsiContainerRef = useRef(null);
+  const jitsiApiRef = useRef(null);
 
   useEffect(() => {
     fetchActiveSession();
+    return () => {
+      if (jitsiApiRef.current) {
+        jitsiApiRef.current.dispose();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -21,13 +31,24 @@ const TeacherLiveSession = ({ teacher }) => {
     }
   }, [activeSession]);
 
+  useEffect(() => {
+    if (jitsiData && jitsiContainerRef.current && !jitsiApiRef.current) {
+      initializeJitsi();
+    }
+  }, [jitsiData]);
+
   const fetchActiveSession = async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get('/api/sessions/active', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setActiveSession(response.data.data);
+      const session = response.data.data;
+      setActiveSession(session);
+      if (session) {
+        setSubject(session.subject || '');
+        setSelectedClass(session.classId?._id || '');
+      }
     } catch (error) {
       console.error('Error fetching active session:', error);
     } finally {
@@ -42,11 +63,46 @@ const TeacherLiveSession = ({ teacher }) => {
         { sessionId: activeSession._id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setMeetingUrl(response.data.data.meetingUrl);
+      setJitsiData(response.data.data);
     } catch (error) {
       console.error('Error fetching Jitsi token:', error);
       toast.error('Failed to initialize secure meeting');
     }
+  };
+
+  const initializeJitsi = () => {
+    if (!window.JitsiMeetExternalAPI) {
+      console.error('Jitsi Meet External API not loaded');
+      return;
+    }
+
+    const options = {
+      roomName: jitsiData.room,
+      width: '100%',
+      height: 650,
+      parentNode: jitsiContainerRef.current,
+      jwt: jitsiData.token,
+      interfaceConfigOverwrite: {
+        SHOW_JITSI_WATERMARK: false,
+        SHOW_BRAND_WATERMARK: false,
+      },
+      configOverwrite: {
+        startWithAudioMuted: true,
+        disableInviteFunctions: true,
+      }
+    };
+
+    const api = new window.JitsiMeetExternalAPI('8x8.vc', options);
+    jitsiApiRef.current = api;
+
+    api.addEventListeners({
+      videoConferenceLeft: handleConferenceLeft,
+      readyToClose: handleConferenceLeft
+    });
+  };
+
+  const handleConferenceLeft = () => {
+    handleEndClass(true);
   };
 
   const handleStartClass = async () => {
@@ -59,7 +115,10 @@ const TeacherLiveSession = ({ teacher }) => {
       setIsProcessing(true);
       const token = localStorage.getItem('token');
       const response = await axios.post('/api/sessions', 
-        { classId: selectedClass },
+        { 
+          classId: selectedClass,
+          subject: subject || teacher?.teacherDetails?.subject || 'General Session'
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -73,23 +132,43 @@ const TeacherLiveSession = ({ teacher }) => {
     }
   };
 
-  const handleEndClass = async () => {
+  const handleEndClass = async (fromJitsi = false) => {
     if (!activeSession) return;
+    if (isProcessing) return;
 
     try {
       setIsProcessing(true);
       const token = localStorage.getItem('token');
+      
+      // Call backend to end session
       await axios.patch(`/api/sessions/${activeSession._id}/end`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
+      // If manually clicked, hang up Jitsi
+      if (!fromJitsi && jitsiApiRef.current) {
+        jitsiApiRef.current.executeCommand('hangup');
+      }
+
+      const sessionId = activeSession._id;
       setActiveSession(null);
-      setMeetingUrl('');
-      setSelectedClass('');
+      setJitsiData(null);
+      if (jitsiApiRef.current) {
+        jitsiApiRef.current.dispose();
+        jitsiApiRef.current = null;
+      }
+      
       toast.success('Session ended successfully');
+      
+      // Redirect to report
+      navigate(`/teacher/reports/${sessionId}`);
     } catch (error) {
        console.error('Error ending session:', error);
-       toast.error('Failed to end session');
+       if (error.response?.status === 400 && error.response?.data?.message === 'Session already ended') {
+         navigate(`/teacher/reports/${activeSession._id}`);
+       } else {
+         toast.error('Failed to end session');
+       }
     } finally {
       setIsProcessing(false);
     }
@@ -123,21 +202,37 @@ const TeacherLiveSession = ({ teacher }) => {
                       <Zap className="text-[#FFD700]" size={32} />
                    </div>
                    <h3 className="text-4xl font-black text-[#1A1A1A] mb-4 tracking-tighter italic">Initialize Broadcast</h3>
-                   <p className="text-gray-500 text-lg mb-10 font-bold uppercase tracking-widest text-[10px]">Select a batch to start your digital attendance session</p>
-                                      <div className="space-y-6">
-                      <div className="relative group">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block italic">Select Target Batch</label>
-                        <Dropdown
-                          value={selectedClass}
-                          onChange={setSelectedClass}
-                          options={teacher?.assignedClasses?.map(cls => ({
-                            label: `${cls.className} — Year ${cls.year} (${cls.section})`,
-                            value: cls._id
-                          })) || []}
-                          placeholder="-- Choose Assigned Class --"
-                          className="w-full"
-                          buttonClassName="!rounded-2xl !py-5 !bg-gray-50 !border-none !text-lg !font-black !tracking-tight !text-[#1A1A1A] !uppercase"
-                        />
+                   <p className="text-gray-500 text-lg mb-10 font-bold uppercase tracking-widest text-[10px]">Select a batch and subject to start your digital attendance session</p>
+                   
+                   <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="relative group">
+                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block italic">Target Batch</label>
+                          <Dropdown
+                            value={selectedClass}
+                            onChange={setSelectedClass}
+                            options={teacher?.assignedClasses?.map(cls => ({
+                              label: `${cls.className} — Year ${cls.year} (${cls.section})`,
+                              value: cls._id
+                            })) || []}
+                            placeholder="-- Choose Class --"
+                            className="w-full"
+                            buttonClassName="!rounded-2xl !py-5 !bg-gray-50 !border-none !text-lg !font-black !tracking-tight !text-[#1A1A1A] !uppercase"
+                          />
+                        </div>
+                        <div className="relative group">
+                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block italic">Subject Name</label>
+                          <div className="relative">
+                            <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 text-[#FFD700]" size={20} />
+                            <input
+                              type="text"
+                              value={subject}
+                              onChange={(e) => setSubject(e.target.value)}
+                              placeholder={teacher?.teacherDetails?.subject || "E.g. Mathematics"}
+                              className="w-full pl-12 pr-6 py-5 bg-gray-50 rounded-2xl text-lg font-black tracking-tight text-[#1A1A1A] focus:ring-2 focus:ring-[#FFD700] outline-none"
+                            />
+                          </div>
+                        </div>
                       </div>
 
                       <button 
@@ -166,7 +261,7 @@ const TeacherLiveSession = ({ teacher }) => {
                  <div>
                     <div className="flex items-center space-x-3 mb-2">
                        <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                       <span className="text-[#FFD700] font-black uppercase tracking-[0.3em] text-[10px] italic">Live Instruction In Progress</span>
+                       <span className="text-[#FFD700] font-black uppercase tracking-[0.3em] text-[10px] italic">Live Instruction: {activeSession.subject}</span>
                     </div>
                     <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">
                       {activeSession.classId?.className}
@@ -180,7 +275,7 @@ const TeacherLiveSession = ({ teacher }) => {
                        <p className="text-xl font-black text-white italic leading-none">{activeSession.attendanceCount || 0}</p>
                     </div>
                     <button 
-                      onClick={handleEndClass}
+                      onClick={() => handleEndClass(false)}
                       disabled={isProcessing}
                       className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-2xl font-black transition-all duration-300 shadow-xl shadow-red-900/10 active:scale-95 flex items-center justify-center uppercase tracking-widest text-[10px]"
                     >
@@ -196,23 +291,18 @@ const TeacherLiveSession = ({ teacher }) => {
            </div>
 
            {/* Video Meeting Interface */}
-           <div className="bg-white rounded-[2.5rem] shadow-2xl border-4 border-[#1A1A1A] overflow-hidden relative group">
-              {!meetingUrl ? (
-                <div className="h-[650px] flex flex-col items-center justify-center space-y-4 bg-gray-50">
-                   <Loader2 className="animate-spin text-[#FFD700]" size={40} />
-                   <p className="text-[10px] font-black text-[#1A1A1A] uppercase tracking-[0.2em] italic">Securing meeting perimeter...</p>
-                </div>
-              ) : (
-                <iframe
-                  src={`${meetingUrl}&config.startWithAudioMuted=true&config.startWithVideoMuted=false`}
-                  width="100%"
-                  height="650px"
-                  allow="camera; microphone; fullscreen; display-capture; autoplay; clipboard-write"
-                  className="w-full border-none"
-                  style={{ backgroundColor: '#1A1A1A' }}
-                  title="Live Classroom Broadcast"
-                />
-              )}
+           <div className="bg-white rounded-[2.5rem] shadow-2xl border-4 border-[#1A1A1A] overflow-hidden relative">
+              <div 
+                ref={jitsiContainerRef}
+                className="h-[650px] w-full bg-[#1A1A1A]"
+              >
+                {!jitsiData && (
+                  <div className="h-full flex flex-col items-center justify-center space-y-4">
+                     <Loader2 className="animate-spin text-[#FFD700]" size={40} />
+                     <p className="text-[10px] font-black text-white uppercase tracking-[0.2em] italic">Securing meeting perimeter...</p>
+                  </div>
+                )}
+              </div>
            </div>
 
            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/50 flex flex-col md:flex-row items-center justify-between gap-6">

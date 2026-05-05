@@ -10,7 +10,8 @@ import {
   X,
   Users,
   Calendar,
-  User as UserIcon
+  User as UserIcon,
+  BarChart3
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -24,6 +25,7 @@ import TeacherAttendance from '../components/TeacherAttendance';
 import TeacherHistory from '../components/TeacherHistory';
 import TeacherBatchRoster from '../components/TeacherBatchRoster';
 import TeacherSessionDetails from '../components/TeacherSessionDetails';
+import TeacherSessionReport from '../components/TeacherSessionReport';
 import TeacherProfile from './teacher/TeacherProfile';
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -41,7 +43,7 @@ const TeacherDashboard = () => {
     { id: 'classes', label: 'My Classes', icon: BookOpen },
     { id: 'live', label: 'Live Session', icon: Video },
     { id: 'attendance', label: 'Attendance', icon: ClipboardCheck },
-    { id: 'history', label: 'History', icon: History },
+    { id: 'history', label: 'Reports', icon: BarChart3 },
     { id: 'profile', label: 'Profile', icon: UserIcon }
   ];
 
@@ -72,6 +74,10 @@ const TeacherDashboard = () => {
     }
 
     if (sessionId && sessionId !== 'undefined') {
+      // Check if we are on the reports route
+      if (window.location.pathname.includes('/reports/')) {
+        return <TeacherSessionReport />;
+      }
       return <TeacherSessionDetails />;
     }
 

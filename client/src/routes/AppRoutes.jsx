@@ -47,6 +47,14 @@ export function AppRoutes() {
         } 
       />
       <Route 
+        path="/teacher/reports/:sessionId" 
+        element={
+          <ProtectedRoute allowedRole="teacher">
+            <TeacherDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
         path="/student" 
         element={
           <ProtectedRoute allowedRole="student">

@@ -155,7 +155,7 @@ const StudentJoinSession = () => {
                            ) : (
                               <>
                                  <Video size={48} className="mb-4 group-hover:scale-110 transition-transform" />
-                                 <span className="text-sm font-black uppercase tracking-[0.2em] italic">GET TOKEN & JOIN</span>
+                                 <span className="text-sm font-black uppercase tracking-[0.2em] italic">JOIN</span>
                               </>
                            )}
                         </button>

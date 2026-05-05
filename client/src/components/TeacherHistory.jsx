@@ -32,7 +32,7 @@ const TeacherHistory = () => {
   };
 
   const handleViewDetails = (id) => {
-    navigate(`/teacher/session/${id}`);
+    navigate(`/teacher/reports/${id}`);
   };
 
   const calculateDuration = (start, end) => {

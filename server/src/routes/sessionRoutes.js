@@ -8,7 +8,9 @@ const {
   getActiveSession,
   getSessionDetails,
   joinSession,
-  getJitsiToken
+  getJitsiToken,
+  leaveSession,
+  getSessionReport
 } = require('../controllers/sessionController');
 
 router.use(protect);
@@ -16,8 +18,10 @@ router.use(protect);
 router.post('/', startSession);
 router.post('/join', joinSession);
 router.post('/token', getJitsiToken);
+router.post('/:id/leave', leaveSession);
 router.get('/active', getActiveSession);
 router.get('/history', getTeacherHistory);
+router.get('/report/:id', getSessionReport);
 router.get('/:id', getSessionDetails);
 router.patch('/:id/end', endSession);
 

@@ -125,8 +125,9 @@ const TeacherClasses = ({ assignedClasses }) => {
                         <LayoutGrid size={14} className="text-[#FFD700]" />
                      </div>
                      <span className="text-xs font-black uppercase tracking-widest leading-none">
-                        Batch {new Date().getFullYear() - (cls.year || 1) + 1} - {new Date().getFullYear() - (cls.year || 1) + 5} — Section {cls.section || 'N/A'}
-                     </span>
+                        Batch {new Date().getFullYear() - (cls.year || 1)} - {new Date().getFullYear() - (cls.year || 1) + 4}
+                        {cls.section && cls.section !== 'NA' && ` — Section ${cls.section}`}
+                      </span>
                   </div>
                   {isLive && (
                     <div className="flex items-center text-emerald-600 pt-2">

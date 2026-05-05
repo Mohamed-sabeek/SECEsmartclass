@@ -11,6 +11,10 @@ const sessionSchema = new mongoose.Schema({
     ref: 'Class',
     required: true
   },
+  subject: {
+    type: String,
+    required: true
+  },
   startTime: {
     type: Date,
     default: Date.now
@@ -26,12 +30,27 @@ const sessionSchema = new mongoose.Schema({
   sessionCode: {
     type: String,
     unique: true,
-    sparse: true // Allows historical sessions without codes to exist
+    sparse: true
   },
   meetingLink: {
     type: String
   },
-  // Basic structure for attendance count (will be used for full tracking later)
+  students: [{
+    studentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    logs: [{
+      joinTime: {
+        type: Date,
+        default: Date.now
+      },
+      leaveTime: {
+        type: Date
+      }
+    }],
+    _id: false
+  }],
   attendanceCount: {
     type: Number,
     default: 0
