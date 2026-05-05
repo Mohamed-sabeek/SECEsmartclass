@@ -4,6 +4,8 @@ const mongoose = require('mongoose');
 const Attendance = require('../models/Attendance');
 const asyncHandler = require('../utils/asyncHandler');
 const jwt = require('jsonwebtoken');
+const { sendEmail } = require('../utils/sendEmail');
+const { sessionStartTemplate } = require('../utils/emailTemplates');
 
 // @desc Start a new class session
 // @route POST /api/sessions
@@ -52,6 +54,44 @@ const startSession = asyncHandler(async (req, res) => {
       sessionCode,
       meetingLink
     });
+
+    // Send email notifications to students (Async/Non-blocking)
+    const sendNotifications = async () => {
+      try {
+        const students = await User.find({ 
+          role: 'student', 
+          classId: classId 
+        }).select('email name');
+
+        const emailTasks = students
+          .filter(s => s.email)
+          .map(student => 
+            sendEmail({
+              to: student.email,
+              subject: `LIVE Class Started: ${subject}`,
+              html: sessionStartTemplate({
+                subject,
+                startTime: new Date(session.startTime).toLocaleString('en-US', { 
+                  hour: '2-digit', 
+                  minute: '2-digit', 
+                  hour12: true,
+                  month: 'short',
+                  day: 'numeric'
+                }),
+                joinUrl: `${process.env.CLIENT_URL || 'http://localhost:5173'}/student/live`
+              })
+            })
+          );
+
+        await Promise.all(emailTasks);
+        console.log(`Successfully sent ${emailTasks.length} notifications for session ${session._id}`);
+      } catch (err) {
+        console.error('Email notification error:', err.message);
+      }
+    };
+
+    // Trigger notifications without awaiting
+    sendNotifications();
 
     res.status(201).json({ success: true, data: session });
   } catch (error) {

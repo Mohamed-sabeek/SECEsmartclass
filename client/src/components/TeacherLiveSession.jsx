@@ -128,7 +128,7 @@ const TeacherLiveSession = ({ teacher, preSelectedClassId, preSelectedSubject })
       );
       
       setActiveSession(response.data.data);
-      toast.success('Live Session Started!');
+      toast.success('Live Session Started! Notifications sent to students.');
     } catch (error) {
       console.error('Error starting class:', error);
       toast.error(error.response?.data?.message || 'Failed to start class');
