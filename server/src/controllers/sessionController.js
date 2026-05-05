@@ -102,9 +102,12 @@ const startSession = asyncHandler(async (req, res) => {
                   month: 'short',
                   day: 'numeric'
                 }),
-                joinUrl: `${process.env.CLIENT_URL || 'http://localhost:5173'}/student/live`
+                joinUrl: `${process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173'}/student/live`
               })
             }).then(() => {
+              console.log("🌐 URL Configuration:");
+              console.log(`🔗 FRONTEND_URL: ${process.env.FRONTEND_URL || 'Not Set'}`);
+              console.log(`🔗 Final Join Link: ${process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173'}/student/live`);
               console.log(`✅ Success: Notification for ${student.name} dispatched to ${recipient}`);
             }).catch(err => {
               console.error(`❌ Failure: Could not send to ${recipient}:`, err.message);

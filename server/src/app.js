@@ -18,8 +18,10 @@ function createApp() {
   // CORS Configuration
   const allowedOrigins = [
     "http://localhost:5173",
-    "https://sec-esmartclass.vercel.app"
-  ];
+    process.env.CLIENT_URL,
+    process.env.FRONTEND_URL,
+    "https://sece-smartclass.vercel.app"
+  ].filter(Boolean);
 
   app.use(
     cors({
