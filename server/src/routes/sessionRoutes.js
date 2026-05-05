@@ -29,4 +29,20 @@ router.get('/report/:id/export/pdf', exportSessionReportPDF);
 router.get('/:id', getSessionDetails);
 router.patch('/:id/end', endSession);
 
+// Debug Route: Test isolated email sending
+router.get('/debug/test-email', async (req, res) => {
+  const { sendEmail } = require('../utils/sendEmail');
+  try {
+    await sendEmail({
+      to: process.env.EMAIL_USER,
+      subject: "Diagnostic: SECE SmartClass SMTP Test",
+      html: "<h1>SMTP Connectivity Verified</h1><p>If you see this, the Nodemailer configuration is correct and the server can reach Gmail SMTP.</p>"
+    });
+    res.json({ success: true, message: "Diagnostic email dispatched to " + process.env.EMAIL_USER });
+  } catch (err) {
+    console.error("DEBUG EMAIL ERROR:", err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;

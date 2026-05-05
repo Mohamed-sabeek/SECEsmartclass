@@ -45,6 +45,10 @@ const startSession = asyncHandler(async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid subject selection for this faculty' });
     }
 
+    console.log("🔥 START SESSION API HIT");
+    console.log("Batch ID from request:", classId);
+    console.log("Subject:", subject);
+
     const session = await Session.create({
       teacherId: req.user.id,
       classId,
@@ -55,18 +59,30 @@ const startSession = asyncHandler(async (req, res) => {
       meetingLink
     });
 
+    console.log("✅ Session Created:", session._id);
+
     // Send email notifications to students (Async/Non-blocking)
     const sendNotifications = async () => {
       try {
+        console.log("🔍 Fetching students for batch:", classId);
         const students = await User.find({ 
           role: 'student', 
           classId: classId 
         }).select('email name');
 
+        console.log("📊 Students found in database:", students.length);
+        students.forEach(s => console.log(`📧 Student queue: ${s.email}`));
+
+        if (students.length === 0) {
+          console.log("⚠️ No students found for this batch. Skipping emails.");
+          return;
+        }
+
         const emailTasks = students
           .filter(s => s.email)
-          .map(student => 
-            sendEmail({
+          .map(student => {
+            console.log(`📤 Attempting email to: ${student.email}`);
+            return sendEmail({
               to: student.email,
               subject: `LIVE Class Started: ${subject}`,
               html: sessionStartTemplate({
@@ -80,13 +96,17 @@ const startSession = asyncHandler(async (req, res) => {
                 }),
                 joinUrl: `${process.env.CLIENT_URL || 'http://localhost:5173'}/student/live`
               })
-            })
-          );
+            }).then(() => {
+              console.log(`✅ Email sent successfully to: ${student.email}`);
+            }).catch(err => {
+              console.error(`❌ Failed to send email to ${student.email}:`, err.message);
+            });
+          });
 
         await Promise.all(emailTasks);
-        console.log(`Successfully sent ${emailTasks.length} notifications for session ${session._id}`);
+        console.log(`🏁 Notification sequence complete for session ${session._id}`);
       } catch (err) {
-        console.error('Email notification error:', err.message);
+        console.error('🔴 Critical Email notification error:', err.message);
       }
     };
 
