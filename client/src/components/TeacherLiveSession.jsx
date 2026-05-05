@@ -5,14 +5,19 @@ import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import Dropdown from './ui/Dropdown';
 
-const TeacherLiveSession = ({ teacher }) => {
+const TeacherLiveSession = ({ teacher, preSelectedClassId, preSelectedSubject }) => {
   const navigate = useNavigate();
   const [activeSession, setActiveSession] = useState(null);
   const [jitsiData, setJitsiData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [selectedClass, setSelectedClass] = useState('');
-  const [subject, setSubject] = useState('');
+  const [selectedClass, setSelectedClass] = useState(preSelectedClassId || '');
+  const [subject, setSubject] = useState(preSelectedSubject || '');
+
+  useEffect(() => {
+    if (preSelectedClassId) setSelectedClass(preSelectedClassId);
+    if (preSelectedSubject) setSubject(preSelectedSubject);
+  }, [preSelectedClassId, preSelectedSubject]);
   const jitsiContainerRef = useRef(null);
   const jitsiApiRef = useRef(null);
 
@@ -117,7 +122,7 @@ const TeacherLiveSession = ({ teacher }) => {
       const response = await axios.post('/api/sessions', 
         { 
           classId: selectedClass,
-          subject: subject || teacher?.teacherDetails?.subject || 'General Session'
+          subject: subject
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -222,22 +227,23 @@ const TeacherLiveSession = ({ teacher }) => {
                         </div>
                         <div className="relative group">
                           <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block italic">Subject Name</label>
-                          <div className="relative">
-                            <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 text-[#FFD700]" size={20} />
-                            <input
-                              type="text"
-                              value={subject}
-                              onChange={(e) => setSubject(e.target.value)}
-                              placeholder={teacher?.teacherDetails?.subject || "E.g. Mathematics"}
-                              className="w-full pl-12 pr-6 py-5 bg-gray-50 rounded-2xl text-lg font-black tracking-tight text-[#1A1A1A] focus:ring-2 focus:ring-[#FFD700] outline-none"
-                            />
-                          </div>
+                          <Dropdown
+                            value={subject}
+                            onChange={setSubject}
+                            options={teacher?.teacherDetails?.subjects?.map(sub => ({
+                              label: sub,
+                              value: sub
+                            })) || []}
+                            placeholder="-- Choose Subject --"
+                            className="w-full"
+                            buttonClassName="!rounded-2xl !py-5 !bg-gray-50 !border-none !text-lg !font-black !tracking-tight !text-[#1A1A1A] !uppercase"
+                          />
                         </div>
                       </div>
 
                       <button 
                         onClick={handleStartClass}
-                        disabled={isProcessing || !selectedClass}
+                        disabled={isProcessing || !selectedClass || !subject}
                         className="group relative w-full flex items-center justify-center bg-[#1A1A1A] hover:bg-[#FFD700] text-white hover:text-[#1A1A1A] px-10 py-6 rounded-2xl font-black transition-all duration-500 shadow-xl shadow-gray-200 hover:shadow-yellow-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-[0.2em] text-sm overflow-hidden"
                       >
                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>

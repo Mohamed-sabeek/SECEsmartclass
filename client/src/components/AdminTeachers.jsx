@@ -26,8 +26,9 @@ const AdminTeachers = () => {
     name: '',
     email: '',
     department: '',
-    subject: ''
+    subjects: [] // Now an array
   });
+  const [tagInput, setTagInput] = useState('');
 
   useEffect(() => {
     fetchTeachers(1);
@@ -77,7 +78,8 @@ const AdminTeachers = () => {
   const handleAdd = () => {
     setModalMode('add');
     setSelectedItem(null);
-    setFormData({ name: '', email: '', department: '', subject: '' });
+    setFormData({ name: '', email: '', department: '', subjects: [] });
+    setTagInput('');
     setShowModal(true);
   };
 
@@ -88,9 +90,35 @@ const AdminTeachers = () => {
       name: item.name,
       email: item.email,
       department: item.department,
-      subject: item.teacherDetails?.subject || ''
+      subjects: item.teacherDetails?.subjects || []
     });
+    setTagInput('');
     setShowModal(true);
+  };
+
+  const handleTagKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const val = tagInput.trim();
+      if (val && !formData.subjects.includes(val)) {
+        setFormData({
+          ...formData,
+          subjects: [...formData.subjects, val]
+        });
+      }
+      setTagInput('');
+    } else if (e.key === 'Backspace' && !tagInput && formData.subjects.length > 0) {
+      const newTags = [...formData.subjects];
+      newTags.pop();
+      setFormData({ ...formData, subjects: newTags });
+    }
+  };
+
+  const removeTag = (indexToRemove) => {
+    setFormData({
+      ...formData,
+      subjects: formData.subjects.filter((_, index) => index !== indexToRemove)
+    });
   };
 
   const handleDelete = async (id) => {
@@ -112,6 +140,11 @@ const AdminTeachers = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
+
+    if (formData.subjects.length === 0) {
+      toast.error('At least one subject is required');
+      return;
+    }
 
     try {
       setIsSubmitting(true);
@@ -135,7 +168,7 @@ const AdminTeachers = () => {
         toast.success('Teacher record updated successfully!');
       }
       setShowModal(false);
-      fetchTeachers(1);
+      fetchTeachers(pagination.page);
     } catch (error) {
       console.error('Error saving teacher:', error);
       toast.error(error.response?.data?.message || 'Something went wrong');
@@ -222,7 +255,7 @@ const AdminTeachers = () => {
                 <tr className="bg-gray-50/30">
                   <th className="px-10 py-6 text-left text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Identity</th>
                   <th className="px-10 py-6 text-left text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Department</th>
-                  <th className="px-10 py-6 text-left text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Specialization</th>
+                  <th className="px-10 py-6 text-left text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Subjects</th>
                   <th className="px-10 py-6 text-left text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Assigned Classes</th>
                   <th className="px-10 py-6 text-center text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Actions</th>
                 </tr>
@@ -254,9 +287,16 @@ const AdminTeachers = () => {
                       </span>
                     </td>
                     <td className="px-10 py-5">
-                      <div className="flex items-center text-[#1A1A1A] font-bold text-sm">
-                        <span className="w-1.5 h-1.5 bg-[#FFD700] rounded-full mr-2"></span>
-                        {teacher.teacherDetails?.subject || 'N/A'}
+                      <div className="flex flex-wrap gap-1 items-center">
+                        {teacher.teacherDetails?.subjects?.length > 0 ? (
+                          teacher.teacherDetails.subjects.map((sub, i) => (
+                            <span key={i} className="px-2 py-0.5 bg-gray-50 text-gray-600 rounded-md text-[10px] font-black uppercase border border-gray-100 italic">
+                              {sub}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-gray-300 italic text-xs">N/A</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-10 py-5">
@@ -327,7 +367,10 @@ const AdminTeachers = () => {
                 <p className="text-gray-400 font-medium">Provide the professional details below</p>
               </div>
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  setShowModal(false);
+                  setTagInput('');
+                }}
                 className="w-12 h-12 flex items-center justify-center rounded-xl bg-gray-50 text-gray-400 hover:text-red-500 transition-all shadow-sm active:scale-90"
               >
                 <X size={24} />
@@ -375,23 +418,48 @@ const AdminTeachers = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Specialization</label>
-                  <input
-                    type="text"
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleChange}
-                    className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD700] focus:border-[#FFD700] transition-all font-bold text-lg shadow-sm"
-                    placeholder="Machine Learning"
-                    required
-                  />
+                  <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Subjects</label>
+                  <div className="min-h-[120px] p-4 bg-gray-50 border border-gray-100 rounded-xl focus-within:ring-2 focus-within:ring-[#FFD700] transition-all">
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {formData.subjects.map((sub, index) => (
+                        <span 
+                          key={index} 
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FFD700] text-[#1A1A1A] rounded-lg font-black text-xs shadow-sm animate-in zoom-in-75 duration-200"
+                        >
+                          {sub}
+                          <button 
+                            type="button" 
+                            onClick={() => removeTag(index)}
+                            className="hover:bg-[#1A1A1A] hover:text-white rounded-full p-0.5 transition-colors"
+                          >
+                            <X size={12} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    <input
+                      type="text"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={handleTagKeyDown}
+                      className="w-full bg-transparent outline-none font-bold text-base placeholder:text-gray-300"
+                      placeholder={formData.subjects.length === 0 ? "Type & press Enter..." : "Add more..."}
+                    />
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-2 font-bold italic ml-1 flex items-center gap-1">
+                    <AlertCircle size={10} />
+                    Press <span className="text-[#1A1A1A]">Enter</span> or <span className="text-[#1A1A1A]">Comma</span> to add tags
+                  </p>
                 </div>
               </div>
 
               <div className="flex gap-4 pt-10">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    setTagInput('');
+                  }}
                   className="flex-1 px-8 py-5 bg-gray-50 text-gray-500 rounded-xl hover:bg-gray-100 transition-all font-bold text-lg active:scale-95"
                 >
                   Discard

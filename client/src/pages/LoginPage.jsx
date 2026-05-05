@@ -88,7 +88,7 @@ const LoginPage = () => {
           <img 
             src={seceLogo} 
             alt="SECE Logo" 
-            className="h-20 md:h-24 w-auto mb-6 object-contain" 
+            className="h-32 md:h-40 w-auto mb-6 object-contain" 
           />
           <h1 className="text-3xl font-black text-[#1A1A1A] mb-2 tracking-tighter">
             SECE <span className="text-[#FFD700]">SmartClass</span>

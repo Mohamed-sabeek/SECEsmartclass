@@ -15,6 +15,14 @@ const attendanceSchema = new mongoose.Schema({
     type: String,
     enum: ['present', 'absent'],
     default: 'present'
+  },
+  duration: {
+    type: String,
+    default: '0 secs'
+  },
+  attendancePercentage: {
+    type: Number,
+    default: 0
   }
 }, { timestamps: true });
 

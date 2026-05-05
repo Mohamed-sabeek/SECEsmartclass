@@ -13,11 +13,10 @@ import {
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const TeacherClasses = ({ assignedClasses }) => {
+const TeacherClasses = ({ teacher, assignedClasses }) => {
   const navigate = useNavigate();
   const [activeSession, setActiveSession] = useState(null);
   const [loadingActive, setLoadingActive] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(null); // stores classId being processed
 
   useEffect(() => {
     fetchActiveSession();
@@ -37,28 +36,16 @@ const TeacherClasses = ({ assignedClasses }) => {
     }
   };
 
-  const handleStartClass = async (classId) => {
+  const handleStartNavigation = (classId, subject = '') => {
     if (activeSession) {
       toast.error('You already have another class live!');
       return;
     }
-
-    try {
-      setIsProcessing(classId);
-      const token = localStorage.getItem('token');
-      const response = await axios.post('/api/sessions', 
-        { classId },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      setActiveSession(response.data.data);
-      toast.success('Class Started Successfully!');
-    } catch (error) {
-      console.error('Error starting class:', error);
-      toast.error(error.response?.data?.message || 'Failed to start class');
-    } finally {
-      setIsProcessing(null);
-    }
+    // Navigate to live session and pass state
+    navigate('/teacher', { state: { activeTab: 'live', preSelectedClassId: classId, preSelectedSubject: subject } });
+    // Since we are in a tabbed view in TeacherDashboard, we might need a different approach if it doesn't listen to location state
+    // But we'll handle it in TeacherDashboard/TeacherLiveSession
+    window.dispatchEvent(new CustomEvent('switchTab', { detail: { tab: 'live', classId, subject } }));
   };
 
   if (!assignedClasses || assignedClasses.length === 0) {
@@ -94,6 +81,7 @@ const TeacherClasses = ({ assignedClasses }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {assignedClasses.map((cls) => {
           const isLive = activeSession?.classId?._id === cls._id || activeSession?.classId === cls._id;
+          const subjects = teacher?.teacherDetails?.subjects || [];
           
           return (
             <div key={cls._id} className={`group relative bg-white rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all duration-500 border border-gray-50 overflow-hidden flex flex-col ${isLive ? 'ring-4 ring-[#FFD700]/20 scale-[1.02]' : ''}`}>
@@ -118,6 +106,27 @@ const TeacherClasses = ({ assignedClasses }) => {
 
                 <h3 className="text-2xl font-black text-[#1A1A1A] mb-2 tracking-tighter leading-tight group-hover:text-[#FFD700] transition-colors">{cls.className}</h3>
                 <p className="text-gray-500 font-bold text-xs uppercase tracking-[0.2em] mb-6">{cls.departmentId?.name || 'Department'}</p>
+
+                {/* Subjects Section */}
+                <div className="mb-6">
+                  <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2">Assigned Subjects</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {subjects.length > 0 ? (
+                      subjects.map((sub, i) => (
+                        <button 
+                          key={i}
+                          onClick={() => handleStartNavigation(cls._id, sub)}
+                          disabled={isLive}
+                          className="px-2 py-1 bg-gray-50 hover:bg-[#FFD700] text-gray-600 hover:text-[#1A1A1A] border border-gray-100 rounded-lg text-[9px] font-black transition-all active:scale-95 disabled:opacity-50 disabled:hover:bg-gray-50"
+                        >
+                          {sub}
+                        </button>
+                      ))
+                    ) : (
+                      <span className="text-[10px] text-gray-300 italic">No subjects defined</span>
+                    )}
+                  </div>
+                </div>
 
                 <div className="space-y-4 pt-6 border-t border-gray-50">
                   <div className="flex items-center text-gray-600">
@@ -148,15 +157,11 @@ const TeacherClasses = ({ assignedClasses }) => {
                    </div>
                 ) : (
                   <button 
-                    onClick={() => handleStartClass(cls._id)}
-                    disabled={activeSession !== null || isProcessing === cls._id}
+                    onClick={() => handleStartNavigation(cls._id)}
+                    disabled={activeSession !== null}
                     className="w-full py-6 bg-[#1A1A1A] text-white hover:bg-[#FFD700] hover:text-[#1A1A1A] transition-all duration-300 flex items-center justify-center space-x-3 disabled:opacity-50 disabled:grayscale disabled:hover:bg-[#1A1A1A] disabled:hover:text-white"
                   >
-                     {isProcessing === cls._id ? (
-                       <Loader2 className="animate-spin" size={18} />
-                     ) : (
-                       <Play size={18} fill="currentColor" />
-                     )}
+                     <Play size={18} fill="currentColor" />
                      <span className="text-xs font-black uppercase tracking-[0.2em]">Start Class</span>
                   </button>
                 )}

@@ -22,11 +22,63 @@ const TeacherSessionReport = () => {
   const navigate = useNavigate();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [exportingCSV, setExportingCSV] = useState(false);
+  const [exportingPDF, setExportingPDF] = useState(false);
   const [expandedRows, setExpandedRows] = useState({});
 
   useEffect(() => {
     fetchReport();
   }, [sessionId]);
+
+  const handleExportCSV = async () => {
+    try {
+      setExportingCSV(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`/api/sessions/report/${sessionId}/export/csv`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Report-${report?.subject || 'Attendance'}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('CSV exported successfully');
+    } catch (error) {
+      console.error('CSV Export error:', error);
+      toast.error('Failed to export CSV report');
+    } finally {
+      setExportingCSV(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      setExportingPDF(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`/api/sessions/report/${sessionId}/export/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Report-${report?.subject || 'Attendance'}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('PDF exported successfully');
+    } catch (error) {
+      console.error('PDF Export error:', error);
+      toast.error('Failed to export PDF report');
+    } finally {
+      setExportingPDF(false);
+    }
+  };
 
   const fetchReport = async () => {
     try {
@@ -97,14 +149,6 @@ const TeacherSessionReport = () => {
           </div>
           <span className="font-black text-xs uppercase tracking-widest">Back to Console</span>
         </button>
-
-        <button 
-          onClick={() => window.print()}
-          className="flex items-center justify-center space-x-3 bg-[#1A1A1A] text-white px-8 py-4 rounded-2xl font-black transition-all hover:bg-[#FFD700] hover:text-[#1A1A1A] shadow-xl shadow-gray-200 active:scale-95 text-xs uppercase tracking-widest"
-        >
-          <Download size={16} />
-          <span>Export Report</span>
-        </button>
       </div>
 
       {/* Session Metadata Card */}
@@ -156,7 +200,37 @@ const TeacherSessionReport = () => {
               </div>
               <h3 className="text-xl font-black text-[#1A1A1A] tracking-tight">ATTENDANCE ROSTER</h3>
            </div>
-           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">{report.students.length} Total Registered Students</span>
+           <div className="flex items-center space-x-3">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic mr-2">{report.students.length} Total Registered Students</span>
+              
+              {/* CSV Export Button */}
+              <button 
+                onClick={handleExportCSV}
+                disabled={exportingCSV || exportingPDF}
+                className="flex items-center px-5 py-2.5 bg-white border-2 border-gray-100 text-[#1A1A1A] rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-[#FFD700] transition-all shadow-sm active:scale-95 disabled:opacity-50"
+              >
+                {exportingCSV ? (
+                  <Loader2 size={14} className="mr-2 animate-spin" />
+                ) : (
+                  <Activity size={14} className="mr-2 text-gray-400" />
+                )}
+                {exportingCSV ? 'CSV Exporting...' : 'Export CSV'}
+              </button>
+
+              {/* PDF Export Button */}
+              <button 
+                onClick={handleExportPDF}
+                disabled={exportingCSV || exportingPDF}
+                className="flex items-center px-5 py-2.5 bg-[#1A1A1A] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#FFD700] hover:text-[#1A1A1A] transition-all shadow-lg active:scale-95 disabled:opacity-50"
+              >
+                {exportingPDF ? (
+                  <Loader2 size={14} className="mr-2 animate-spin" />
+                ) : (
+                  <Download size={14} className="mr-2" />
+                )}
+                {exportingPDF ? 'PDF Exporting...' : 'Export PDF'}
+              </button>
+           </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -166,7 +240,7 @@ const TeacherSessionReport = () => {
                 <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Student Details</th>
                 <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">First Join</th>
                 <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Last Leave</th>
-                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Total Duration</th>
+                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Total Duration & %</th>
                 <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Status</th>
                 <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Logs</th>
               </tr>
@@ -194,9 +268,21 @@ const TeacherSessionReport = () => {
                         </div>
                       </td>
                       <td className="px-8 py-6">
-                         <span className="text-xs font-black text-gray-600 uppercase italic">
-                           {student.firstJoinTime ? formatTime(student.firstJoinTime) : '—'}
-                         </span>
+                         <div className="flex flex-col">
+                            <span className="text-xs font-black text-gray-600 uppercase italic">
+                              {student.firstJoinTime ? formatTime(student.firstJoinTime) : '—'}
+                            </span>
+                            {student.firstJoinTime && report.startTime && (new Date(student.firstJoinTime) - new Date(report.startTime) > 5000) && (
+                              <span className="text-[9px] font-black text-red-500 uppercase tracking-tighter mt-1 italic">
+                                🔴 Late (+{(() => {
+                                  const diff = new Date(student.firstJoinTime) - new Date(report.startTime);
+                                  const m = Math.floor(diff / 60000);
+                                  const s = Math.floor((diff % 60000) / 1000);
+                                  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+                                })()})
+                              </span>
+                            )}
+                         </div>
                       </td>
                       <td className="px-8 py-6">
                          <span className="text-xs font-black text-gray-600 uppercase italic">
@@ -207,6 +293,9 @@ const TeacherSessionReport = () => {
                          <div className="flex flex-col">
                             <span className={`text-xs font-black ${student.status === 'Present' ? 'text-[#1A1A1A]' : 'text-gray-300'}`}>
                               {student.attendedDuration}
+                              {student.attendancePercentage !== undefined && (
+                                <span className="ml-2 text-[10px] text-gray-400 italic">({student.attendancePercentage}%)</span>
+                              )}
                             </span>
                             {student.logCount > 1 && (
                               <span className="text-[9px] font-black text-[#FFD700] uppercase italic">{student.logCount} logs</span>

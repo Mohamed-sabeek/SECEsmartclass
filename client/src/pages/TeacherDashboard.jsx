@@ -47,8 +47,27 @@ const TeacherDashboard = () => {
     { id: 'profile', label: 'Profile', icon: UserIcon }
   ];
 
+  const [preSelectedClassId, setPreSelectedClassId] = useState(null);
+  const [preSelectedSubject, setPreSelectedSubject] = useState('');
+
   useEffect(() => {
     fetchProfile();
+    
+    // Listen for tab switch events
+    const handleSwitchTab = (e) => {
+      const { tab, classId, subject } = e.detail;
+      setActiveTab(tab);
+      if (classId) setPreSelectedClassId(classId);
+      if (subject) setPreSelectedSubject(subject);
+      
+      // Clear URL params if any
+      if (classId || sessionId) {
+        navigate('/teacher');
+      }
+    };
+
+    window.addEventListener('switchTab', handleSwitchTab);
+    return () => window.removeEventListener('switchTab', handleSwitchTab);
   }, []);
 
   const fetchProfile = async () => {
@@ -85,9 +104,13 @@ const TeacherDashboard = () => {
       case 'dashboard':
         return <TeacherDashboardHome teacher={teacherData} setActiveTab={setActiveTab} />;
       case 'classes':
-        return <TeacherClasses assignedClasses={teacherData?.assignedClasses} />;
+        return <TeacherClasses teacher={teacherData} assignedClasses={teacherData?.assignedClasses} />;
       case 'live':
-        return <TeacherLiveSession teacher={teacherData} />;
+        return <TeacherLiveSession 
+          teacher={teacherData} 
+          preSelectedClassId={preSelectedClassId}
+          preSelectedSubject={preSelectedSubject}
+        />;
       case 'attendance':
         return <TeacherAttendance teacher={teacherData} />;
       case 'history':

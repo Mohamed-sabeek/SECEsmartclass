@@ -37,8 +37,11 @@ const TeacherHistory = () => {
 
   const calculateDuration = (start, end) => {
     if (!end) return 'Active';
-    const duration = Math.round((new Date(end) - new Date(start)) / 60000);
-    return `${duration} mins`;
+    const diffMs = new Date(end) - new Date(start);
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return mins > 0 ? `${mins} mins ${secs} secs` : `${secs} secs`;
   };
 
   if (loading) {

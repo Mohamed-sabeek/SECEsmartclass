@@ -48,7 +48,7 @@ const Navbar = () => {
             <img 
               src={seceLogo} 
               alt="SECE Logo" 
-              className="h-12 md:h-16 w-auto object-contain" 
+              className="h-16 md:h-20 w-auto object-contain" 
             />
             <span className="text-xl md:text-2xl text-[#1A1A1A] tracking-tight leading-none">
               SECE <span className="font-bold text-[#FFD700]">SmartClass</span>

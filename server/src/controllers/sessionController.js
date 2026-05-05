@@ -33,14 +33,20 @@ const startSession = asyncHandler(async (req, res) => {
     const sessionCode = Math.random().toString(36).substring(2, 8).toUpperCase();
     const meetingLink = `https://meet.jit.si/sece-${sessionCode}`;
 
-    // Get teacher's default subject if not provided
+    // Get teacher's subjects and validate
     const user = await User.findById(req.user.id);
-    const finalSubject = subject || user.teacherDetails?.subject || 'General Session';
+    if (!subject) {
+      return res.status(400).json({ success: false, message: 'Subject selection is required' });
+    }
+
+    if (!user.teacherDetails?.subjects?.includes(subject)) {
+      return res.status(400).json({ success: false, message: 'Invalid subject selection for this faculty' });
+    }
 
     const session = await Session.create({
       teacherId: req.user.id,
       classId,
-      subject: finalSubject,
+      subject: subject,
       startTime: new Date(),
       status: 'LIVE',
       sessionCode,
@@ -86,6 +92,46 @@ const endSession = asyncHandler(async (req, res) => {
       });
     });
 
+    await session.save();
+
+    // Sync attendance statuses based on 70% rule
+    const totalSessionSeconds = Math.max(Math.floor((session.endTime - session.startTime) / 1000), 1);
+    
+    for (const studentEntry of session.students) {
+      let totalAttendedSeconds = 0;
+      studentEntry.logs.forEach(log => {
+        if (log.leaveTime) {
+          totalAttendedSeconds += Math.floor((new Date(log.leaveTime) - new Date(log.joinTime)) / 1000);
+        }
+      });
+
+      const percentage = Number(((totalAttendedSeconds / totalSessionSeconds) * 100).toFixed(1));
+      const finalStatus = percentage >= 70 ? 'present' : 'absent';
+
+      const attMins = Math.floor(totalAttendedSeconds / 60);
+      const attSecs = totalAttendedSeconds % 60;
+      const durationStr = totalAttendedSeconds > 0 
+        ? (attMins > 0 ? `${attMins} mins ${attSecs} secs` : `${attSecs} secs`)
+        : '0 secs';
+
+      await Attendance.findOneAndUpdate(
+        { sessionId: session._id, studentId: studentEntry.studentId },
+        { 
+          status: finalStatus,
+          duration: durationStr,
+          attendancePercentage: percentage
+        },
+        { upsert: true }
+      );
+    }
+
+    // Recalculate attendance count based on students who meet the 70% threshold
+    const finalPresentCount = await Attendance.countDocuments({
+      sessionId: session._id,
+      status: 'present'
+    });
+    
+    session.attendanceCount = finalPresentCount;
     await session.save();
 
     res.status(200).json({ success: true, data: session });
@@ -374,9 +420,9 @@ const getSessionReport = asyncHandler(async (req, res) => {
       classId: session.classId._id 
     }).select('name email');
 
-    const totalSeconds = Math.floor((session.endTime - session.startTime) / 1000);
-    const totalMins = Math.floor(totalSeconds / 60);
-    const totalSecs = totalSeconds % 60;
+    const totalSessionSeconds = Math.max(Math.floor((session.endTime - session.startTime) / 1000), 1);
+    const totalMins = Math.floor(totalSessionSeconds / 60);
+    const totalSecs = totalSessionSeconds % 60;
     const totalDurationFormatted = totalMins > 0 ? `${totalMins} mins ${totalSecs} secs` : `${totalSecs} secs`;
 
     const reportStudents = allStudentsInClass.map(student => {
@@ -402,6 +448,9 @@ const getSessionReport = asyncHandler(async (req, res) => {
         });
       }
 
+      const attendancePercentage = Number(((totalAttendedSeconds / totalSessionSeconds) * 100).toFixed(1));
+      const status = attendancePercentage >= 70 ? 'Present' : 'Absent';
+
       const attMins = Math.floor(totalAttendedSeconds / 60);
       const attSecs = totalAttendedSeconds % 60;
       const attendedDurationFormatted = totalAttendedSeconds > 0 
@@ -416,7 +465,8 @@ const getSessionReport = asyncHandler(async (req, res) => {
         logs,
         logCount: logs.length,
         attendedDuration: attendedDurationFormatted,
-        status: totalAttendedSeconds > 0 ? 'Present' : 'Absent'
+        attendancePercentage,
+        status
       };
     });
 
@@ -437,6 +487,213 @@ const getSessionReport = asyncHandler(async (req, res) => {
   }
 });
 
+const PDFDocument = require('pdfkit-table');
+
+// @desc Export session report as CSV
+// @route GET /api/sessions/report/:id/export/csv
+// @access Private (Teacher)
+const exportSessionReportCSV = asyncHandler(async (req, res) => {
+  try {
+    const session = await Session.findById(req.params.id)
+      .populate('classId', 'className section year')
+      .populate('teacherId', 'name');
+
+    if (!session || !session.endTime) {
+      return res.status(404).json({ success: false, message: 'Session not found or not ended' });
+    }
+
+    const allStudentsInClass = await User.find({ 
+      role: 'student', 
+      classId: session.classId._id 
+    }).select('name email');
+
+    const totalSessionSeconds = Math.max(Math.floor((session.endTime - session.startTime) / 1000), 1);
+    
+    // Header for CSV
+    let csvContent = 'Student Name,Email,Join Time,Leave Time,Duration,Percentage,Status\n';
+
+    let presentCount = 0;
+    let absentCount = 0;
+
+    allStudentsInClass.forEach(student => {
+      const studentEntry = session.students.find(s => s.studentId.toString() === student._id.toString());
+      
+      let firstJoinStr = '—';
+      let lastLeaveStr = '—';
+      let totalAttendedSeconds = 0;
+
+      if (studentEntry && studentEntry.logs.length > 0) {
+        const sortedLogs = studentEntry.logs.sort((a, b) => new Date(a.joinTime) - new Date(b.joinTime));
+        firstJoinStr = new Date(sortedLogs[0].joinTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        
+        const lastLog = sortedLogs[sortedLogs.length - 1];
+        if (lastLog.leaveTime) {
+          lastLeaveStr = new Date(lastLog.leaveTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        }
+
+        studentEntry.logs.forEach(log => {
+          if (log.leaveTime) {
+            totalAttendedSeconds += Math.floor((new Date(log.leaveTime) - new Date(log.joinTime)) / 1000);
+          }
+        });
+      }
+
+      const percentage = Number(((totalAttendedSeconds / totalSessionSeconds) * 100).toFixed(1));
+      const status = percentage >= 70 ? 'Present' : 'Absent';
+      
+      if (status === 'Present') presentCount++;
+      else absentCount++;
+
+      const attMins = Math.floor(totalAttendedSeconds / 60);
+      const attSecs = totalAttendedSeconds % 60;
+      const durationStr = totalAttendedSeconds > 0 
+        ? (attMins > 0 ? `${attMins} mins ${attSecs} secs` : `${attSecs} secs`)
+        : '0 secs';
+
+      const studentName = `"${student.name.replace(/"/g, '""')}"`;
+      csvContent += `${studentName},${student.email},${firstJoinStr},${lastLeaveStr},${durationStr},${percentage}%,${status}\n`;
+    });
+
+    // Add summary at the bottom (Strict 2-column format after 1 blank row)
+    csvContent += `\n`;
+    csvContent += `Summary,\n`;
+    csvContent += `Total Students,${allStudentsInClass.length}\n`;
+    csvContent += `Present,${presentCount}\n`;
+    csvContent += `Absent,${absentCount}\n`;
+    csvContent += `Subject,${session.subject}\n`;
+    csvContent += `Date,${new Date(session.startTime).toLocaleDateString()}\n`;
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=Report-${session.classId.className}.csv`);
+    res.status(200).send(csvContent);
+
+  } catch (error) {
+    console.error('CSV EXPORT ERROR:', error.message);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// @desc Export session report as PDF
+// @route GET /api/sessions/report/:id/export/pdf
+// @access Private (Teacher)
+const exportSessionReportPDF = asyncHandler(async (req, res) => {
+  try {
+    const session = await Session.findById(req.params.id)
+      .populate('classId', 'className section year')
+      .populate('teacherId', 'name');
+
+    if (!session || !session.endTime) {
+      return res.status(404).json({ success: false, message: 'Session not found or not ended' });
+    }
+
+    const allStudentsInClass = await User.find({ 
+      role: 'student', 
+      classId: session.classId._id 
+    }).select('name email');
+
+    const totalSessionSeconds = Math.max(Math.floor((session.endTime - session.startTime) / 1000), 1);
+    const totalDurationMins = Math.floor(totalSessionSeconds / 60);
+    const totalDurationSecs = totalSessionSeconds % 60;
+    const totalDurationStr = totalDurationMins > 0 ? `${totalDurationMins}m ${totalDurationSecs}s` : `${totalDurationSecs}s`;
+
+    const doc = new PDFDocument({ margin: 40, size: 'A4' });
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=Attendance-Report-${session.classId.className}.pdf`);
+    doc.pipe(res);
+
+    // Header (Centered)
+    doc.fillColor('#1A1A1A').fontSize(22).font('Helvetica-Bold').text('ATTENDANCE REPORT', { align: 'center' });
+    doc.moveDown(0.3);
+    doc.fillColor('#6B7280').fontSize(11).font('Helvetica').text(`${session.subject} • ${new Date(session.startTime).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`, { align: 'center' });
+    doc.moveDown(2);
+
+    // Summary Boxes (Centered in one row)
+    const pageWidth = doc.page.width - 80;
+    const boxWidth = pageWidth / 3 - 10;
+    const summaryY = doc.y;
+
+    let presentCount = 0;
+    const studentsData = allStudentsInClass.map(student => {
+      const entry = session.students.find(s => s.studentId.toString() === student._id.toString());
+      let attendedSecs = 0;
+      let firstJoin = '—';
+      let lastLeave = '—';
+
+      if (entry && entry.logs.length > 0) {
+        const sorted = entry.logs.sort((a, b) => new Date(a.joinTime) - new Date(b.joinTime));
+        firstJoin = new Date(sorted[0].joinTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        const lastLog = sorted[sorted.length - 1];
+        if (lastLog.leaveTime) {
+          lastLeave = new Date(lastLog.leaveTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        }
+        entry.logs.forEach(l => { if (l.leaveTime) attendedSecs += Math.floor((new Date(l.leaveTime) - new Date(l.joinTime)) / 1000); });
+      }
+
+      const perc = Number(((attendedSecs / totalSessionSeconds) * 100).toFixed(1));
+      const status = perc >= 70 ? 'Present' : 'Absent';
+      if (status === 'Present') presentCount++;
+
+      const attMins = Math.floor(attendedSecs / 60);
+      const attSecs = attendedSecs % 60;
+      const attStr = attendedSecs > 0 ? (attMins > 0 ? `${attMins}m ${attSecs}s` : `${attSecs}s`) : '0s';
+
+      return [student.name, firstJoin, lastLeave, attStr, `${perc}%`, status];
+    });
+
+    // Box 1: Total Duration
+    doc.rect(40, summaryY, boxWidth, 60).fillAndStroke('#F9FAFB', '#E5E7EB');
+    doc.fillColor('#6B7280').fontSize(8).font('Helvetica-Bold').text('TOTAL DURATION', 40, summaryY + 15, { width: boxWidth, align: 'center' });
+    doc.fillColor('#1A1A1A').fontSize(14).text(totalDurationStr, 40, summaryY + 30, { width: boxWidth, align: 'center' });
+
+    // Box 2: Students Present
+    doc.rect(40 + boxWidth + 15, summaryY, boxWidth, 60).fillAndStroke('#1A1A1A', '#1A1A1A');
+    doc.fillColor('#9CA3AF').fontSize(8).text('STUDENTS PRESENT', 40 + boxWidth + 15, summaryY + 15, { width: boxWidth, align: 'center' });
+    doc.fillColor('#FFFFFF').fontSize(14).text(`${presentCount}`, 40 + boxWidth + 15, summaryY + 30, { width: boxWidth, align: 'center' });
+
+    // Box 3: Total Students
+    doc.rect(40 + (boxWidth + 15) * 2, summaryY, boxWidth, 60).fillAndStroke('#F9FAFB', '#E5E7EB');
+    doc.fillColor('#6B7280').fontSize(8).text('TOTAL STUDENTS', 40 + (boxWidth + 15) * 2, summaryY + 15, { width: boxWidth, align: 'center' });
+    doc.fillColor('#1A1A1A').fontSize(14).text(`${allStudentsInClass.length}`, 40 + (boxWidth + 15) * 2, summaryY + 30, { width: boxWidth, align: 'center' });
+
+    // Move cursor below the boxes
+    doc.y = summaryY + 80;
+
+    // Table Header (Manually positioned for accuracy)
+    doc.fillColor('#1A1A1A').fontSize(14).font('Helvetica-Bold').text('Attendance Roster', 40, doc.y);
+    doc.fontSize(10).font('Helvetica').text(`Class: ${session.classId.className}`, 40, doc.y);
+    doc.moveDown(1);
+
+    // Table (Full width with explicit x position)
+    const table = {
+      headers: ["Student", "Join", "Leave", "Duration", "%", "Status"],
+      rows: studentsData,
+    };
+
+    await doc.table(table, {
+      x: 40,
+      width: pageWidth,
+      prepareHeader: () => doc.font("Helvetica-Bold").fontSize(9).fillColor('#1A1A1A'),
+      prepareRow: (row, index, column, rect, rowIndex, columnIndex) => {
+        doc.font("Helvetica").fontSize(8).fillColor('#4B5563');
+        if (columnIndex === 5) { // Status column
+          if (row[5] === 'Present') doc.fillColor('#10B981');
+          else doc.fillColor('#EF4444');
+        }
+      },
+    });
+
+    // Footer (Centered Bottom)
+    doc.fontSize(8).fillColor('#9CA3AF').text(`Generated by SECE SmartClass • ${new Date().toLocaleString()}`, 0, doc.page.height - 60, { align: 'center' });
+
+    doc.end();
+
+  } catch (error) {
+    console.error('PDF EXPORT ERROR:', error.message);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 module.exports = {
   startSession,
   endSession,
@@ -446,5 +703,7 @@ module.exports = {
   joinSession,
   getJitsiToken,
   leaveSession,
-  getSessionReport
+  getSessionReport,
+  exportSessionReportCSV,
+  exportSessionReportPDF
 };

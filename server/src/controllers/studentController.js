@@ -116,25 +116,31 @@ const getStudentHistory = asyncHandler(async (req, res) => {
 
     const sessionIds = sessions.map(s => s._id);
 
-    // Get which ones the student attended
+    // Get all attendance records for this student in these sessions
     const attendanceRecords = await Attendance.find({
       studentId,
-      sessionId: { $in: sessionIds },
-      status: 'present'
-    }).select('sessionId');
+      sessionId: { $in: sessionIds }
+    });
 
-    const attendedSessionIds = new Set(attendanceRecords.map(a => a.sessionId.toString()));
+    const attendanceMap = new Map(
+      attendanceRecords.map(a => [a.sessionId.toString(), a])
+    );
 
-    const result = sessions.map(session => ({
-      _id: session._id,
-      className: session.classId ? 
-        `${session.classId.className} (S-${session.classId.section})` : 
-        'Class',
-      teacherName: session.teacherId?.name || 'Faculty',
-      startTime: session.startTime,
-      endTime: session.endTime,
-      status: attendedSessionIds.has(session._id.toString()) ? 'Present' : 'Absent'
-    }));
+    const result = sessions.map(session => {
+      const record = attendanceMap.get(session._id.toString());
+      return {
+        _id: session._id,
+        className: session.classId ? 
+          `${session.classId.className}` : 
+          'Class',
+        teacherName: session.teacherId?.name || 'Faculty',
+        startTime: session.startTime,
+        endTime: session.endTime,
+        status: record ? (record.status === 'present' ? 'Present' : 'Absent') : 'Absent',
+        duration: record?.duration || '0 secs',
+        attendancePercentage: record?.attendancePercentage || 0
+      };
+    });
 
     res.status(200).json({
       success: true,

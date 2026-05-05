@@ -38,7 +38,7 @@ const getMe = asyncHandler(async (req, res) => {
 // Add new user (Admin only)
 const addUser = async (req, res) => {
   try {
-    const { name, email, role, department, classId, rollNo, admissionYear, currentYear, subject } = req.body;
+    const { name, email, role, department, classId, rollNo, admissionYear, currentYear, subjects } = req.body;
 
     // 1. Validate required fields
     if (!name || !email || !role) {
@@ -72,10 +72,17 @@ const addUser = async (req, res) => {
       userData.classId = classId; // Must be present
       userData.studentDetails = { rollNo, admissionYear, currentYear };
     } else if (role === 'teacher') {
-      if (!subject) {
-        return res.status(400).json({ message: 'Teacher specialization subject is required' });
+      let subjectsArray = [];
+      if (Array.isArray(subjects)) {
+        subjectsArray = subjects.map(s => s.trim()).filter(s => s !== '');
+      } else if (typeof subjects === 'string') {
+        subjectsArray = subjects.split(',').map(s => s.trim()).filter(s => s !== '');
       }
-      userData.teacherDetails = { subject };
+
+      if (subjectsArray.length === 0) {
+        return res.status(400).json({ message: 'At least one teacher subject is required' });
+      }
+      userData.teacherDetails = { subjects: subjectsArray };
     }
 
     // 6. Create and Save User
@@ -185,7 +192,7 @@ const getAllUsers = async (req, res) => {
 const updateUser = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, department, classId, rollNo, admissionYear, currentYear, subject } = req.body;
+    const { name, email, department, classId, rollNo, admissionYear, currentYear, subjects } = req.body;
     const updateData = { 
       name, 
       email, 
@@ -205,8 +212,14 @@ const updateUser = asyncHandler(async (req, res) => {
         admissionYear: admissionYear !== undefined ? (Number(admissionYear) || userToUpdate.studentDetails?.admissionYear) : userToUpdate.studentDetails?.admissionYear,
         currentYear: currentYear !== undefined ? (Number(currentYear) || userToUpdate.studentDetails?.currentYear) : userToUpdate.studentDetails?.currentYear
       };
-    } else if (userToUpdate.role === 'teacher' && subject) {
-      updateData.teacherDetails = { subject };
+    } else if (userToUpdate.role === 'teacher' && subjects) {
+      let subjectsArray = [];
+      if (Array.isArray(subjects)) {
+        subjectsArray = subjects.map(s => s.trim()).filter(s => s !== '');
+      } else if (typeof subjects === 'string') {
+        subjectsArray = subjects.split(',').map(s => s.trim()).filter(s => s !== '');
+      }
+      updateData.teacherDetails = { subjects: subjectsArray };
     }
 
     const user = await User.findByIdAndUpdate(

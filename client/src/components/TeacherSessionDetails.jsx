@@ -48,12 +48,18 @@ const TeacherSessionDetails = () => {
 
   const calculateDuration = (start, end) => {
     if (!end) return 'Ongoing';
-    const durationMs = new Date(end) - new Date(start);
-    const mins = Math.round(durationMs / 60000);
-    if (mins < 60) return `${mins} mins`;
+    const diffMs = new Date(end) - new Date(start);
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    
+    if (mins < 60) {
+      return mins > 0 ? `${mins} mins ${secs} secs` : `${secs} secs`;
+    }
+    
     const hours = Math.floor(mins / 60);
     const remainingMins = mins % 60;
-    return `${hours}h ${remainingMins}m`;
+    return `${hours}h ${remainingMins}m ${secs}s`;
   };
 
   if (loading) {

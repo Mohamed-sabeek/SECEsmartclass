@@ -52,7 +52,7 @@ const userSchema = new mongoose.Schema(
       _id: false
     },
     teacherDetails: {
-      subject: { type: String, trim: true },
+      subjects: { type: [String], default: [] },
       _id: false
     },
     mustChangePassword: { type: Boolean, default: false },

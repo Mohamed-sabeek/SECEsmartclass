@@ -10,7 +10,9 @@ const {
   joinSession,
   getJitsiToken,
   leaveSession,
-  getSessionReport
+  getSessionReport,
+  exportSessionReportCSV,
+  exportSessionReportPDF
 } = require('../controllers/sessionController');
 
 router.use(protect);
@@ -22,6 +24,8 @@ router.post('/:id/leave', leaveSession);
 router.get('/active', getActiveSession);
 router.get('/history', getTeacherHistory);
 router.get('/report/:id', getSessionReport);
+router.get('/report/:id/export/csv', exportSessionReportCSV);
+router.get('/report/:id/export/pdf', exportSessionReportPDF);
 router.get('/:id', getSessionDetails);
 router.patch('/:id/end', endSession);
 

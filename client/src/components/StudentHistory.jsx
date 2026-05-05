@@ -31,9 +31,11 @@ const StudentHistory = () => {
 
   const calculateDuration = (start, end) => {
     if (!end) return 'Active';
-    const durationMs = new Date(end) - new Date(start);
-    const mins = Math.round(durationMs / 60000);
-    return `${mins} mins`;
+    const diffMs = new Date(end) - new Date(start);
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return mins > 0 ? `${mins} mins ${secs} secs` : `${secs} secs`;
   };
 
   if (loading) {
@@ -77,8 +79,8 @@ const StudentHistory = () => {
             onChange={setFilterStatus}
             options={[
               { label: 'All Status', value: 'All' },
-              { label: 'Synced (Present)', value: 'Present' },
-              { label: 'Signal Lost (Absent)', value: 'Absent' }
+              { label: 'Present (≥ 70%)', value: 'Present' },
+              { label: 'Absent (< 70%)', value: 'Absent' }
             ]}
             className="md:w-64"
           />
@@ -144,7 +146,7 @@ const StudentHistory = () => {
                   <th className="px-10 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50 text-center">Date</th>
                   <th className="px-10 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50 text-center">Status</th>
                   <th className="px-10 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50 text-center">Window</th>
-                  <th className="px-10 py-6 text-right text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50">Duration</th>
+                  <th className="px-10 py-6 text-right text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50">Participation (%)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -154,8 +156,7 @@ const StudentHistory = () => {
                   const sessionDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                   
                   const matchClass = filterClass === 'All' || session.className === filterClass;
-                  const matchStatus = filterStatus === 'All' || 
-                    (filterStatus === 'Present' ? session.status === 'Present' : session.status !== 'Present');
+                  const matchStatus = filterStatus === 'All' || session.status === filterStatus;
                   const matchDate = !filterDate || sessionDate === filterDate;
                   
                   return matchClass && matchStatus && matchDate;
@@ -179,14 +180,14 @@ const StudentHistory = () => {
                     </td>
                     <td className="px-10 py-6 text-center">
                        {session.status === 'Present' ? (
-                          <span className="inline-flex items-center px-4 py-1.5 bg-green-50 text-green-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-green-100">
+                          <span className="inline-flex items-center px-4 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-emerald-100">
                              <CheckCircle size={12} className="mr-1.5" />
-                             Synced
+                             Present
                           </span>
                        ) : (
                           <span className="inline-flex items-center px-4 py-1.5 bg-red-50 text-red-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-red-100">
                              <XCircle size={12} className="mr-1.5" />
-                             Signal Lost
+                             Absent
                           </span>
                        )}
                     </td>
@@ -198,10 +199,15 @@ const StudentHistory = () => {
                        </span>
                     </td>
                     <td className="px-10 py-6 text-right">
-                       <div className="inline-flex items-center px-4 py-2 rounded-xl bg-gray-50 text-[10px] font-black text-gray-800 border border-gray-100">
-                          <Clock size={12} className="mr-2 text-[#FFD700]" />
-                          {calculateDuration(session.startTime, session.endTime)}
-                       </div>
+                        <div className="inline-flex flex-col items-end">
+                           <div className="flex items-center px-4 py-2 rounded-xl bg-gray-50 text-[10px] font-black text-gray-800 border border-gray-100">
+                              <Clock size={12} className="mr-2 text-[#FFD700]" />
+                              {session.duration}
+                           </div>
+                           <span className={`text-[10px] font-black uppercase italic mt-1 pr-1 ${session.status === 'Present' ? 'text-emerald-500' : 'text-red-400'}`}>
+                              {session.attendancePercentage}% Attendance
+                           </span>
+                        </div>
                     </td>
                   </tr>
                 ))}
