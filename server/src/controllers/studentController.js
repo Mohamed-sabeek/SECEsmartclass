@@ -168,15 +168,31 @@ const getStudentTeachers = asyncHandler(async (req, res) => {
     const teachers = await User.find({
       role: 'teacher',
       assignedClasses: student.classId
-    }).select('name email avatar teacherDetails');
+    })
+    .select('name email avatar teacherDetails assignedClasses')
+    .populate({
+      path: 'assignedClasses',
+      select: 'className departmentId section year',
+      populate: {
+        path: 'departmentId',
+        select: 'name code'
+      }
+    });
 
-    const result = teachers.map(teacher => ({
-      _id: teacher._id,
-      name: teacher.name,
-      email: teacher.email,
-      avatar: teacher.avatar,
-      subject: teacher.teacherDetails?.subject || 'N/A'
-    }));
+    const result = teachers.map(teacher => {
+      // Find the specific class details for the student's class among teacher's assignments
+      const studentClass = teacher.assignedClasses.find(c => c._id.toString() === student.classId.toString());
+      
+      return {
+        _id: teacher._id,
+        name: teacher.name,
+        email: teacher.email,
+        avatar: teacher.avatar,
+        subject: teacher.teacherDetails?.subjects?.[0] || 'Faculty Member',
+        department: studentClass?.departmentId?.name || 'Academic Faculty',
+        className: studentClass?.className || 'N/A'
+      };
+    });
 
     res.status(200).json({
       success: true,

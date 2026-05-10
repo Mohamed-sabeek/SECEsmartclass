@@ -170,7 +170,7 @@ const TeacherClasses = ({ teacher, assignedClasses }) => {
                   onClick={() => navigate(`/teacher/class/${cls._id}`)}
                   className="w-full py-6 px-10 bg-gray-50 hover:bg-white text-gray-600 hover:text-[#1A1A1A] transition-all duration-300 flex items-center justify-between border-t border-gray-100"
                 >
-                   <span className="text-xs font-black uppercase tracking-[0.2em]">View Roster</span>
+                   <span className="text-xs font-black uppercase tracking-[0.2em]">View Student Roster</span>
                    <ChevronRight size={18} className="group-hover:translate-x-2 transition-transform" />
                 </button>
               </div>

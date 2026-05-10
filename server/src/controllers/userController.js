@@ -411,6 +411,14 @@ const getStudentsByClass = asyncHandler(async (req, res) => {
       classId: new mongoose.Types.ObjectId(classId)
     })
     .select('name email studentDetails classId')
+    .populate({
+      path: 'classId',
+      select: 'className year section departmentId',
+      populate: {
+        path: 'departmentId',
+        select: 'name code'
+      }
+    })
     .sort({ name: 1 });
 
     res.status(200).json({

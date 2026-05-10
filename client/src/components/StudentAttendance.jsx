@@ -20,7 +20,7 @@ const StudentAttendance = () => {
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('All');
-  const [filterClass, setFilterClass] = useState('All');
+
   const [filterDate, setFilterDate] = useState('');
   const dateInputRef = useRef(null);
 
@@ -162,15 +162,7 @@ const StudentAttendance = () => {
 
       {!historyLoading && history.length > 0 && (
         <div className="flex flex-col md:flex-row gap-4 mb-8">
-          <Dropdown
-            value={filterClass}
-            onChange={setFilterClass}
-            options={['All', ...new Set(history.map(s => s.className))].map(cls => ({
-              label: cls === 'All' ? 'All Modules' : cls,
-              value: cls
-            }))}
-            className="md:w-64"
-          />
+
           <Dropdown
             value={filterStatus}
             onChange={setFilterStatus}
@@ -255,11 +247,10 @@ const StudentAttendance = () => {
                   const d = new Date(session.startTime);
                   const sessionDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                   
-                  const matchClass = filterClass === 'All' || session.className === filterClass;
                   const matchStatus = filterStatus === 'All' || session.status === filterStatus;
                   const matchDate = !filterDate || sessionDate === filterDate;
                   
-                  return matchClass && matchStatus && matchDate;
+                  return matchStatus && matchDate;
                 }).map((session) => (
                   <tr key={session._id} className="group hover:bg-yellow-50/20 transition-all duration-300">
                     <td className="px-10 py-6">

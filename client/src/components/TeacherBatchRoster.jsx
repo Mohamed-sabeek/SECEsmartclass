@@ -75,11 +75,23 @@ const TeacherBatchRoster = () => {
             Back to Dashboard
           </button>
           <h2 className="text-3xl font-black text-[#1A1A1A] tracking-tighter">
-            Batch <span className="text-[#FFD700]">Roster</span>
+            Student <span className="text-[#FFD700]">Roster</span>
           </h2>
           <p className="text-gray-500 mt-2 font-medium italic uppercase tracking-widest text-[10px]">
             {classInfo ? (
-              `${classInfo.className} — Batch ${new Date().getFullYear() - (classInfo.year || 1)} - ${new Date().getFullYear() - (classInfo.year || 1) + 4}${classInfo.section && classInfo.section !== 'NA' ? ` (Section ${classInfo.section})` : ''}`
+              <span className="flex items-center gap-2">
+                <span className="text-[#1A1A1A] font-black underline decoration-[#FFD700] decoration-2 underline-offset-4">
+                  {classInfo.departmentId?.name || classInfo.className}
+                </span>
+                <span className="text-gray-300">|</span>
+                <span>Batch {new Date().getFullYear() - (classInfo.year || 1)} - {new Date().getFullYear() - (classInfo.year || 1) + 4}</span>
+                {classInfo.section && classInfo.section !== 'NA' && (
+                  <>
+                    <span className="text-gray-300">|</span>
+                    <span>Section {classInfo.section}</span>
+                  </>
+                )}
+              </span>
             ) : (
               'Viewing student roll call'
             )}
@@ -114,8 +126,7 @@ const TeacherBatchRoster = () => {
                   <th className="px-10 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50 font-black">Student Details</th>
                   <th className="px-10 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50 text-center font-black">Roll Number</th>
                   <th className="px-10 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50 text-center font-black">Batch</th>
-                  <th className="px-10 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50 text-center font-black">Level</th>
-                  <th className="px-10 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50 text-right font-black">Contact</th>
+                  <th className="px-10 py-6 text-right text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50 font-black">Level</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -144,21 +155,13 @@ const TeacherBatchRoster = () => {
                         {student.studentDetails?.admissionYear ? `${student.studentDetails.admissionYear} - ${student.studentDetails.admissionYear + 4}` : 'N/A'}
                       </span>
                     </td>
-                    <td className="px-10 py-6 text-center">
+                    <td className="px-10 py-6 text-right">
                       <div className="inline-flex items-center space-x-2">
                         <Calendar size={14} className="text-[#FFD700]" />
                         <span className="text-xs font-black text-gray-700">
                           {getYearLabel(student.studentDetails?.currentYear)}
                         </span>
                       </div>
-                    </td>
-                    <td className="px-10 py-6 text-right">
-                       <a 
-                        href={`mailto:${student.email}`}
-                        className="p-3 bg-gray-50 rounded-xl text-gray-400 hover:bg-[#1A1A1A] hover:text-[#FFD700] transition-colors inline-block"
-                       >
-                          <Mail size={18} />
-                       </a>
                     </td>
                   </tr>
                 ))}
