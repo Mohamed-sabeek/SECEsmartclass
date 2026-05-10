@@ -27,11 +27,7 @@ const Footer = () => {
                   How It Works
                 </a>
               </li>
-              <li>
-                <a href="#" className="text-gray-400 hover:text-[#FFD700] transition-all duration-300">
-                  Pricing
-                </a>
-              </li>
+
             </ul>
           </div>
 
