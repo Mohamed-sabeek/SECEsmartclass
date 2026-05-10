@@ -75,12 +75,12 @@ const TeacherAttendance = ({ teacher }) => {
           <p className="text-gray-500 mt-2 font-medium italic">Detailed breakdown of student participation across your academic sessions</p>
         </div>
         
-        <div className="flex flex-wrap gap-4 w-full md:w-auto">
-           <div className="relative flex-1 md:min-w-[300px]">
+        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+           <div className="relative w-full sm:w-auto sm:min-w-[300px]">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input 
                 type="text"
-                placeholder="Search student or roll number..."
+                placeholder="Search student..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-12 pr-6 py-4 bg-white border border-gray-100 rounded-2xl focus:ring-4 focus:ring-[#FFD700]/10 focus:border-[#FFD700] transition-all font-bold text-sm shadow-sm"
@@ -98,7 +98,7 @@ const TeacherAttendance = ({ teacher }) => {
                 })) || [])
               ]}
               placeholder="All Assigned Classes"
-              className="min-w-[250px]"
+              className="w-full sm:min-w-[250px]"
             />
         </div>
       </div>

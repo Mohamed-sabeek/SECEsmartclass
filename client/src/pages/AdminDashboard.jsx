@@ -149,7 +149,7 @@ const AdminDashboard = () => {
         )}
 
         {/* Main Content */}
-        <main className="flex-1 lg:ml-72 p-8 lg:p-12 min-h-[calc(100vh-5rem)]">
+        <main className="flex-1 lg:ml-72 p-4 sm:p-8 lg:p-12 min-h-[calc(100vh-5rem)] min-w-0 overflow-hidden">
           <div className="max-w-6xl mx-auto">
             {renderContent()}
           </div>

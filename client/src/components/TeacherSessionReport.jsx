@@ -204,12 +204,12 @@ const TeacherSessionReport = () => {
           <span className="font-black text-xs uppercase tracking-widest">Back to Console</span>
         </button>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
             {/* CSV Export Button */}
             <button 
               onClick={handleExportCSV}
               disabled={exportingCSV || exportingPDF}
-              className="flex items-center px-6 py-3 bg-white border border-gray-100 text-[#1A1A1A] rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-50 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+              className="w-full sm:w-auto flex items-center justify-center px-6 py-3 bg-white border border-gray-100 text-[#1A1A1A] rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-50 transition-all shadow-sm active:scale-95 disabled:opacity-50"
             >
               {exportingCSV ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Activity size={16} className="mr-2 text-[#FFD700]" />}
               {exportingCSV ? 'Processing...' : 'Export CSV'}
@@ -219,7 +219,7 @@ const TeacherSessionReport = () => {
             <button 
               onClick={handleExportPDF}
               disabled={exportingCSV || exportingPDF}
-              className="flex items-center px-6 py-3 bg-[#1A1A1A] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#FFD700] hover:text-[#1A1A1A] transition-all shadow-xl active:scale-95 disabled:opacity-50"
+              className="w-full sm:w-auto flex items-center justify-center px-6 py-3 bg-[#1A1A1A] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#FFD700] hover:text-[#1A1A1A] transition-all shadow-xl active:scale-95 disabled:opacity-50"
             >
               {exportingPDF ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Download size={16} className="mr-2" />}
               {exportingPDF ? 'Generating...' : 'Export PDF'}
@@ -254,12 +254,12 @@ const TeacherSessionReport = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-             <div className="bg-gray-50 rounded-[2rem] p-6 text-center border border-gray-100 min-w-[140px]">
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+             <div className="bg-gray-50 rounded-[2rem] p-6 text-center border border-gray-100 w-full sm:min-w-[140px]">
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Duration</p>
                 <p className="text-3xl font-black text-[#1A1A1A]">{report.totalDuration}</p>
              </div>
-             <div className="bg-[#1A1A1A] rounded-[2rem] p-6 text-center shadow-lg min-w-[140px]">
+             <div className="bg-[#1A1A1A] rounded-[2rem] p-6 text-center shadow-lg w-full sm:min-w-[140px]">
                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Present Count</p>
                 <p className="text-3xl font-black text-white">{report.students.filter(s => s.status === 'Present').length}</p>
              </div>
@@ -351,7 +351,7 @@ const TeacherSessionReport = () => {
                           </div>
                           <div>
                             <p className="text-base font-black text-[#1A1A1A] tracking-tight">{student.studentName}</p>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{student.email}</p>
+                            <p className="text-[10px] font-bold text-gray-400 tracking-tighter">{student.email?.toLowerCase()}</p>
                           </div>
                         </div>
                       </td>

@@ -156,11 +156,11 @@ const LoginPage = () => {
             <span className="text-[10px] font-black uppercase tracking-widest">Back to portal</span>
           </button>
 
-          <div className="mb-12">
+          <div className="mb-12 flex flex-col items-center text-center">
             <img 
               src={seceLogo} 
               alt="SECE Logo" 
-              className="h-24 w-auto mb-8 object-contain drop-shadow-xl" 
+              className="h-24 w-auto mb-8 object-contain drop-shadow-xl mx-auto" 
             />
             <h2 className="text-4xl font-black text-[#1A1A1A] tracking-tighter mb-2">
               Identity <span className="text-[#FFD700]">Verification</span>

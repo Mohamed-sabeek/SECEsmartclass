@@ -131,7 +131,7 @@ const AdminDepartments = () => {
         </div>
         <button
           onClick={handleAdd}
-          className="group relative flex items-center bg-[#1A1A1A] hover:bg-[#FFD700] text-white hover:text-[#1A1A1A] px-6 py-3 rounded-xl transition-all duration-300 shadow-xl hover:shadow-yellow-500/20 font-bold overflow-hidden text-sm"
+          className="w-full sm:w-auto group relative flex items-center justify-center bg-[#1A1A1A] hover:bg-[#FFD700] text-white hover:text-[#1A1A1A] px-6 py-3 rounded-xl transition-all duration-300 shadow-xl hover:shadow-yellow-500/20 font-bold overflow-hidden text-sm"
         >
           <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
           <Plus size={20} className="mr-2" />
@@ -146,8 +146,8 @@ const AdminDepartments = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-[1.5rem] shadow-xl border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-50 bg-gray-50/10">
+      <div className="bg-white rounded-[1.5rem] shadow-xl border border-gray-100 overflow-hidden mb-10">
+        <div className="p-4 sm:p-8 border-b border-gray-50 bg-gray-50/10">
           <div className="relative group max-w-lg">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-[#FFD700] transition-colors" size={18} />
             <input
@@ -177,29 +177,29 @@ const AdminDepartments = () => {
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50/30">
-                  <th className="px-10 py-6 text-left text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Department Unit</th>
-                  <th className="px-10 py-6 text-left text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Identifier</th>
-                  <th className="px-10 py-6 text-left text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Head Admin</th>
-                  <th className="px-10 py-6 text-center text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Actions</th>
+                  <th className="px-4 sm:px-10 py-4 sm:py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Department Unit</th>
+                  <th className="px-4 sm:px-10 py-4 sm:py-6 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Identifier</th>
+                  <th className="px-4 sm:px-10 py-4 sm:py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Head Admin</th>
+                  <th className="px-4 sm:px-10 py-4 sm:py-6 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {filteredDepartments.map((dept) => (
                   <tr key={dept._id} className="group hover:bg-yellow-50/30 transition-all duration-300">
-                    <td className="px-10 py-5">
+                    <td className="px-4 sm:px-10 py-4 sm:py-5">
                       <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-xl bg-[#1A1A1A] flex items-center justify-center text-[#FFD700] font-black text-sm mr-4 shadow-lg group-hover:rotate-6 transition-transform">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-[#1A1A1A] flex items-center justify-center text-[#FFD700] font-black text-[10px] sm:text-sm mr-3 sm:mr-4 shadow-lg group-hover:rotate-6 transition-transform shrink-0">
                           {dept.name.charAt(0)}
                         </div>
-                        <span className="text-base font-bold text-[#1A1A1A]">{dept.name}</span>
+                        <span className="text-xs sm:text-base font-black text-[#1A1A1A] leading-tight">{dept.name}</span>
                       </div>
                     </td>
-                    <td className="px-10 py-5">
+                    <td className="px-4 sm:px-10 py-4 sm:py-5 text-center">
                       <span className="px-3 py-1 bg-white border border-gray-100 text-gray-800 rounded-lg font-black text-[10px] shadow-sm group-hover:border-[#FFD700] transition-colors">
                         {dept.code}
                       </span>
                     </td>
-                    <td className="px-10 py-5 text-gray-600 font-bold text-sm">{dept.hod}</td>
+                    <td className="px-4 sm:px-10 py-4 sm:py-5 text-gray-600 font-bold text-[10px] sm:text-sm">{dept.hod}</td>
                     <td className="px-10 py-5">
                       <div className="flex items-center justify-center gap-2">
                         <button

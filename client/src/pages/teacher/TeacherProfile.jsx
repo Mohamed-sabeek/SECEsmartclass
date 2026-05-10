@@ -99,7 +99,7 @@ const TeacherProfile = () => {
     <div className="animate-in fade-in duration-700 max-w-6xl mx-auto">
       {/* Banner Section */}
       <div className="bg-[#1A1A1A] rounded-[2.5rem] p-12 shadow-2xl relative overflow-hidden mb-10 border border-white/5">
-        <div className="absolute top-0 right-0 p-10 opacity-10 pointer-events-none">
+        <div className="absolute top-0 right-0 p-10 opacity-10 pointer-events-none hidden md:block">
            <Briefcase size={150} className="text-white" />
         </div>
         

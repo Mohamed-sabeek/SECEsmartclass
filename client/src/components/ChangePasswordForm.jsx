@@ -154,16 +154,18 @@ const ChangePasswordForm = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full flex items-center justify-center space-x-3 bg-[#1A1A1A] hover:bg-[#FFD700] text-white hover:text-[#1A1A1A] py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all duration-500 shadow-xl shadow-gray-200 hover:shadow-yellow-500/20 active:scale-[0.98] disabled:opacity-50"
+          className="w-full bg-[#1A1A1A] hover:bg-[#FFD700] text-white hover:text-[#1A1A1A] py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all duration-500 shadow-xl shadow-gray-200 hover:shadow-yellow-500/20 active:scale-[0.98] disabled:opacity-50"
         >
-          {loading ? (
-            <Loader2 size={18} className="animate-spin" />
-          ) : (
-            <>
-              <Save size={18} />
-              <span>Update Security Credentials</span>
-            </>
-          )}
+          <div className="flex items-center justify-center space-x-3 px-4">
+            {loading ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <>
+                <Save size={18} className="shrink-0" />
+                <span>Update Security Credentials</span>
+              </>
+            )}
+          </div>
         </button>
       </form>
     </div>

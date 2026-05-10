@@ -141,7 +141,7 @@ const TeacherBatchRoster = () => {
                         </div>
                         <div>
                           <p className="text-sm font-black text-gray-800 uppercase tracking-tight">{student.name}</p>
-                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{student.email}</p>
+                          <p className="text-[10px] font-bold text-gray-400 tracking-widest">{student.email?.toLowerCase()}</p>
                         </div>
                       </div>
                     </td>

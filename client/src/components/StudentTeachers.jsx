@@ -84,7 +84,7 @@ const StudentTeachers = () => {
                   <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center group-hover/item:bg-[#1A1A1A] transition-colors duration-300">
                     <Mail size={14} className="text-[#FFD700] shrink-0" />
                   </div>
-                  <span className="text-xs font-black uppercase tracking-tight truncate">{teacher.email}</span>
+                  <span className="text-xs font-black tracking-tight truncate">{teacher.email?.toLowerCase()}</span>
                 </div>
                 
                 <div className="flex items-center gap-4 text-gray-500 group/item">
