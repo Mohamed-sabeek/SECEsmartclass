@@ -19,7 +19,6 @@ import toast from 'react-hot-toast';
 import StudentDashboardHome from '../components/StudentDashboardHome';
 import StudentJoinSession from '../components/StudentJoinSession';
 import StudentAttendance from '../components/StudentAttendance';
-import StudentHistory from '../components/StudentHistory';
 import StudentTeachers from '../components/StudentTeachers';
 import StudentProfile from './student/StudentProfile';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -38,7 +37,6 @@ const StudentDashboard = () => {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'join', label: 'Join Session', icon: Radio },
     { id: 'attendance', label: 'Attendance', icon: ClipboardCheck },
-    { id: 'history', label: 'History', icon: History },
     { id: 'teachers', label: 'My Teachers', icon: Users },
     { id: 'profile', label: 'Profile', icon: UserIcon }
   ];
@@ -48,7 +46,12 @@ const StudentDashboard = () => {
     
     // Sync state if tab param changes (e.g. back button)
     if (tab && tab !== activeTab) {
-      setActiveTab(tab);
+      if (tab === 'history') {
+        setActiveTab('attendance');
+        navigate('/student/attendance', { replace: true });
+      } else {
+        setActiveTab(tab);
+      }
     }
     
     // Listen for tab switch events
@@ -84,9 +87,8 @@ const StudentDashboard = () => {
       case 'join':
         return <StudentJoinSession />;
       case 'attendance':
+      case 'history': // Handle legacy route
         return <StudentAttendance />;
-      case 'history':
-        return <StudentHistory />;
       case 'teachers':
         return <StudentTeachers />;
       case 'profile':

@@ -5,19 +5,29 @@ const asyncHandler = require('../utils/asyncHandler')
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body || {}
 
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Email and password are required' })
+  if (!email || !email.trim()) {
+    return res.status(400).json({ success: false, message: 'Please enter your email address.' })
   }
 
-  const user = await User.findOne({ email: String(email).toLowerCase() }).select('+password')
-  if (!user) return res.status(401).json({ message: 'Invalid credentials' })
+  if (!password) {
+    return res.status(400).json({ success: false, message: 'Please enter your password.' })
+  }
+
+  const user = await User.findOne({ email: String(email).toLowerCase().trim() }).select('+password')
+  
+  if (!user) {
+    return res.status(401).json({ success: false, message: 'No account found with this email.' })
+  }
 
   const ok = await user.comparePassword(password)
-  if (!ok) return res.status(401).json({ message: 'Invalid credentials' })
+  if (!ok) {
+    return res.status(401).json({ success: false, message: 'Incorrect password. Please try again.' })
+  }
 
   const token = signToken({ id: user._id.toString(), role: user.role })
 
   return res.json({
+    success: true,
     token,
     user: {
       id: user._id.toString(),

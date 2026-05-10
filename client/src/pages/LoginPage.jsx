@@ -3,6 +3,7 @@ import { LogIn, Mail, Lock, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-rea
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 import seceLogo from '../assets/sece-logo.png';
 
 const LoginPage = () => {
@@ -17,8 +18,15 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Redirect if already logged in
+  // Redirect if already logged in or handle expiry message
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('reason') === 'expired') {
+      setError('Your session has expired. Please login again.');
+      // Clean up the URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     if (isAuthenticated && role) {
       if (role === 'admin') {
         navigate('/admin', { replace: true });
@@ -33,21 +41,35 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    
+    // 1. Frontend Validation
+    if (!formData.email.trim()) {
+      setError('Please enter your email address.');
+      return;
+    }
+    if (!formData.password) {
+      setError('Please enter your password.');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // API call to backend
+      // 2. API call to backend
       const response = await axios.post('/api/auth/login', {
-        email: formData.email,
+        email: formData.email.trim(),
         password: formData.password
       });
 
       const { token, user } = response.data;
 
+      // 3. Success Flow
+      toast.success(`Welcome back, ${user.name.split(' ')[0]}!`);
+      
       // Store token and user in context and localStorage
       login(token, user);
 
-      // Redirect based on role with replace to prevent back navigation
+      // Redirect based on role
       if (user.role === 'admin') {
         navigate('/admin', { replace: true });
       } else if (user.role === 'teacher') {
@@ -55,16 +77,20 @@ const LoginPage = () => {
       } else if (user.role === 'student') {
         navigate('/student', { replace: true });
       } else {
-        setError('Invalid user role');
+        setError('You do not have permission to access this portal.');
       }
     } catch (err) {
-      // Handle errors
-      if (err.response && err.response.data && err.response.data.message) {
+      // 4. Detailed Error Handling
+      if (!err.response) {
+        setError('Unable to connect to server. Please check your internet connection.');
+      } else if (err.response.status === 401) {
+        setError(err.response.data.message || 'Incorrect email or password.');
+      } else if (err.response.status === 403) {
+        setError('Access denied. Your account may be deactivated.');
+      } else if (err.response.data && err.response.data.message) {
         setError(err.response.data.message);
-      } else if (err.message) {
-        setError(err.message);
       } else {
-        setError('Login failed. Please try again.');
+        setError('Login failed. Please try again later.');
       }
     } finally {
       setLoading(false);
@@ -100,9 +126,11 @@ const LoginPage = () => {
         <div className="bg-white rounded-2xl shadow-lg p-8">
           {/* Error Message */}
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
-              <AlertCircle className="text-red-500 mr-3 flex-shrink-0 mt-0.5" size={20} />
-              <p className="text-sm text-red-700">{error}</p>
+            <div className="mb-6 p-4 bg-red-50 border-2 border-red-100 rounded-2xl flex items-center animate-in shake duration-500">
+              <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
+                <AlertCircle className="text-red-600" size={20} />
+              </div>
+              <p className="text-xs font-black text-red-700 uppercase tracking-tight leading-tight">{error}</p>
             </div>
           )}
 

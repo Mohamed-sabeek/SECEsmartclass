@@ -20,11 +20,11 @@ axios.interceptors.request.use(
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid
+    if (error.response?.status === 401 && !window.location.pathname.includes('/login')) {
+      // Token expired or invalid (but not on the login page itself)
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      window.location.href = '/login?reason=expired';
     }
     return Promise.reject(error);
   }
