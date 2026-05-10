@@ -63,7 +63,7 @@ const changePassword = asyncHandler(async (req, res) => {
   // Verify current password
   const isMatch = await user.comparePassword(currentPassword);
   if (!isMatch) {
-    return res.status(401).json({ message: 'Incorrect current password' });
+    return res.status(400).json({ success: false, message: 'Incorrect current password' });
   }
 
   // Check if new password is the same as current
