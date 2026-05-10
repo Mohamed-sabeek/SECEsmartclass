@@ -1,6 +1,6 @@
 import { LogOut, LayoutDashboard, Building2, Users, GraduationCap, Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AdminDashboardHome from '../components/AdminDashboardHome';
 import AdminDepartments from '../components/AdminDepartments';
 import AdminTeachers from '../components/AdminTeachers';
@@ -8,10 +8,13 @@ import AdminStudents from '../components/AdminStudents';
 import AdminClasses from '../components/AdminClasses';
 import AdminAssignTeacher from '../components/AdminAssignTeacher';
 import { LayoutGrid, ClipboardCheck } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 const AdminDashboard = () => {
   const { logout } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const navigate = useNavigate();
+  const { tab } = useParams();
+  const [activeTab, setActiveTab] = useState(tab || 'dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const menuItems = [
@@ -22,6 +25,12 @@ const AdminDashboard = () => {
     { id: 'students', label: 'Students', icon: GraduationCap },
     { id: 'assign-teachers', label: 'Assign Teachers', icon: ClipboardCheck },
   ];
+
+  useEffect(() => {
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [tab]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -94,6 +103,7 @@ const AdminDashboard = () => {
                     key={item.id}
                     onClick={() => {
                       setActiveTab(item.id);
+                      navigate(`/admin/${item.id}`);
                       setSidebarOpen(false);
                     }}
                     className={`w-full group flex items-center px-5 py-4 rounded-[1.25rem] transition-all duration-500 relative overflow-hidden ${

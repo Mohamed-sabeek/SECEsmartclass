@@ -31,9 +31,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 
 const TeacherDashboard = () => {
   const { logout, user } = useAuth();
-  const { classId, sessionId } = useParams();
+  const { tab, classId, sessionId } = useParams();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(tab || 'dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [teacherData, setTeacherData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -53,22 +53,25 @@ const TeacherDashboard = () => {
   useEffect(() => {
     fetchProfile();
     
+    // Sync state if tab param changes
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+    
     // Listen for tab switch events
     const handleSwitchTab = (e) => {
-      const { tab, classId, subject } = e.detail;
-      setActiveTab(tab);
+      const { tab: newTab, classId, subject } = e.detail;
+      setActiveTab(newTab);
       if (classId) setPreSelectedClassId(classId);
       if (subject) setPreSelectedSubject(subject);
       
-      // Clear URL params if any
-      if (classId || sessionId) {
-        navigate('/teacher');
-      }
+      // Update URL
+      navigate(`/teacher/${newTab}`);
     };
 
     window.addEventListener('switchTab', handleSwitchTab);
     return () => window.removeEventListener('switchTab', handleSwitchTab);
-  }, []);
+  }, [tab]);
 
   const fetchProfile = async () => {
     try {
@@ -161,9 +164,7 @@ const TeacherDashboard = () => {
                   navigate(item.path);
                 } else {
                   setActiveTab(item.id);
-                  if (classId || sessionId) {
-                    navigate('/teacher');
-                  }
+                  navigate(`/teacher/${item.id}`);
                 }
                 setSidebarOpen(false);
               }}

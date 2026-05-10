@@ -15,7 +15,7 @@ export function AppRoutes() {
 
       {/* Protected Routes - Role-Based */}
       <Route 
-        path="/admin" 
+        path="/admin/:tab?" 
         element={
           <ProtectedRoute allowedRole="admin">
             <AdminDashboard />
@@ -23,7 +23,7 @@ export function AppRoutes() {
         } 
       />
       <Route 
-        path="/teacher" 
+        path="/teacher/:tab?" 
         element={
           <ProtectedRoute allowedRole="teacher">
             <TeacherDashboard />
@@ -55,7 +55,7 @@ export function AppRoutes() {
         } 
       />
       <Route 
-        path="/student" 
+        path="/student/:tab?" 
         element={
           <ProtectedRoute allowedRole="student">
             <StudentDashboard />

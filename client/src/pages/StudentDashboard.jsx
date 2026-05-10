@@ -22,12 +22,13 @@ import StudentAttendance from '../components/StudentAttendance';
 import StudentHistory from '../components/StudentHistory';
 import StudentTeachers from '../components/StudentTeachers';
 import StudentProfile from './student/StudentProfile';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 const StudentDashboard = () => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const { tab } = useParams();
+  const [activeTab, setActiveTab] = useState(tab || 'dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [studentData, setStudentData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -44,15 +45,21 @@ const StudentDashboard = () => {
   useEffect(() => {
     fetchProfile();
     
+    // Sync state if tab param changes (e.g. back button)
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+    
     // Listen for tab switch events
     const handleSwitchTab = (e) => {
       if (e.detail) {
         setActiveTab(e.detail);
+        navigate(`/student/${e.detail}`);
       }
     };
     window.addEventListener('switchTab', handleSwitchTab);
     return () => window.removeEventListener('switchTab', handleSwitchTab);
-  }, []);
+  }, [tab]);
 
   const fetchProfile = async () => {
     try {
@@ -127,6 +134,7 @@ const StudentDashboard = () => {
                   navigate(item.path);
                 } else {
                   setActiveTab(item.id);
+                  navigate(`/student/${item.id}`);
                 }
                 setSidebarOpen(false);
               }}
