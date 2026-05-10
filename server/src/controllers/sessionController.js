@@ -357,9 +357,11 @@ const joinSession = asyncHandler(async (req, res) => {
       session = await Session.findOne({ _id: sessionId, status: 'LIVE' });
     }
 
-    if (!session) {
-      return res.status(404).json({ success: false, message: 'Active session not found' });
+    if (!session || session.status !== 'LIVE') {
+      return res.status(404).json({ success: false, message: 'Active LIVE session not found' });
     }
+
+    console.log(`🔥 JOIN API HIT: Student ${studentId} for Session ${session._id}`);
 
     // 4. Update session tracking (multi-log support)
     const studentEntryIdx = session.students.findIndex(s => s.studentId.toString() === studentId.toString());
@@ -373,9 +375,11 @@ const joinSession = asyncHandler(async (req, res) => {
     } else {
       // Re-joining: Check if there's an already active log
       const activeLog = session.students[studentEntryIdx].logs.find(l => !l.leaveTime);
-      if (!activeLog) {
-        session.students[studentEntryIdx].logs.push({ joinTime: new Date() });
+      if (activeLog) {
+        console.log(`⚠️ Duplicate join blocked for student ${studentId}`);
+        return res.status(200).json({ success: true, message: 'Already joined' });
       }
+      session.students[studentEntryIdx].logs.push({ joinTime: new Date() });
     }
 
     await session.save();
@@ -476,6 +480,8 @@ const leaveSession = asyncHandler(async (req, res) => {
     const session = await Session.findById(req.params.id);
     if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
 
+    console.log(`🚪 LEAVE API HIT: Student ${req.user.id} for Session ${req.params.id}`);
+
     // Find student in session
     const studentEntry = session.students.find(s => s.studentId.toString() === req.user.id.toString());
     
@@ -483,7 +489,18 @@ const leaveSession = asyncHandler(async (req, res) => {
       // Get the last log
       const lastLog = studentEntry.logs[studentEntry.logs.length - 1];
       if (!lastLog.leaveTime) {
-        lastLog.leaveTime = new Date();
+        const leaveTime = new Date();
+        const duration = leaveTime - new Date(lastLog.joinTime);
+
+        // PART 2: MINIMUM DURATION FILTER (15 Seconds)
+        if (duration < 15000) {
+          console.log(`🗑️ Ignored fake attendance: Duration ${duration}ms too short (under 15s) for student ${req.user.id}`);
+          studentEntry.logs.pop(); // Remove the micro-log
+          await session.save();
+          return res.status(200).json({ success: true, message: 'Micro-session ignored' });
+        }
+
+        lastLog.leaveTime = leaveTime;
         await session.save();
       }
     }

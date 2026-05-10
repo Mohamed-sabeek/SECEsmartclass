@@ -358,9 +358,7 @@ const TeacherSessionReport = () => {
                          <span className="text-xs font-black text-gray-800 italic uppercase">
                            {student.firstJoinTime ? formatTime(student.firstJoinTime) : '—'}
                          </span>
-                         {student.firstJoinTime && report.startTime && (new Date(student.firstJoinTime) - new Date(report.startTime) > 5000) && (
-                            <p className="text-[8px] font-black text-red-500 uppercase tracking-widest mt-1 italic">🔴 Entry Delay</p>
-                         )}
+
                       </td>
                       <td className="px-10 py-6 text-center">
                          <span className="text-xs font-black text-gray-800 italic uppercase">

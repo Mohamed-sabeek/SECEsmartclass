@@ -2,15 +2,17 @@
 node_modules/
 client/node_modules/
 server/node_modules/
+.pnp
+.pnp.js
 
 # Environment variables (VERY IMPORTANT)
 .env
-server/.env
-client/.env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+server/.env
+client/.env
 
 # Logs
 logs/
@@ -18,6 +20,7 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
 # Runtime files
 pids
@@ -27,35 +30,52 @@ pids
 
 # Build folders
 dist/
+dist-ssr/
 build/
 client/dist/
 .next/
 out/
+.vercel
 
 # OS files
 .DS_Store
+.DS_Store?
+._*
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
 # Editor folders
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-project
+*.sublime-workspace
 
-# Local uploads (DO NOT PUSH)
+# Local uploads and temporary files
 server/uploads/
 server/temp/
+temp/
+uploads/
 
 # Test and Scratch files
 server/test_*.js
 server/src/scratch/
+coverage/
+.nyc_output/
 
 # Cache
 .cache/
 .parcel-cache/
-
-# Coverage reports
-coverage/
+.eslintcache
+.stylelintcache
 
 # Local test data
 *.sqlite
+*.db
+
+# AI / Tooling
+.gemini/
+.antigravity/
+.antigravityignore

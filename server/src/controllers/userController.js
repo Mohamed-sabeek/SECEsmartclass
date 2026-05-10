@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Session = require('../models/Session');
 const bcrypt = require('bcryptjs');
 const { Readable } = require('stream');
 const csv = require('csv-parser');
@@ -27,7 +28,14 @@ const getMe = asyncHandler(async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    res.status(200).json({ success: true, data: user });
+    const userData = user.toObject();
+
+    if (user.role === 'teacher') {
+      const sessionCount = await Session.countDocuments({ teacherId: user._id });
+      userData.totalSessions = sessionCount;
+    }
+
+    res.status(200).json({ success: true, data: userData });
   } catch (error) {
     console.error('GET ME ERROR:', error.message);
     console.error(error.stack);

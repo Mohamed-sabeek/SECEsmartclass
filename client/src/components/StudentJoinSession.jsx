@@ -1,19 +1,118 @@
-import { useState, useEffect } from 'react';
-import { Radio, Scan, Loader2, CheckCircle2, AlertCircle, ArrowRight, ShieldCheck, Video, GraduationCap, Lock } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { 
+  Radio, 
+  Scan, 
+  Loader2, 
+  CheckCircle2, 
+  AlertCircle, 
+  ArrowRight, 
+  ShieldCheck, 
+  Video, 
+  GraduationCap, 
+  Lock,
+  Zap,
+  Clock,
+  X
+} from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
 const StudentJoinSession = () => {
+  const { user: currentUser } = useAuth();
   const [activeSession, setActiveSession] = useState(null);
   const [joining, setJoining] = useState(false);
   const [loading, setLoading] = useState(true);
+  
+  // Jitsi States
+  const [meetingStarted, setMeetingStarted] = useState(false);
+  const [meetingLoading, setMeetingLoading] = useState(false);
+  const [jitsiData, setJitsiData] = useState(null);
+  
+  const jitsiApiRef = useRef(null);
+  const hasConfirmedJoin = useRef(false);
 
   useEffect(() => {
     fetchActiveSession();
-    // Refresh detection every 10 seconds
-    const interval = setInterval(fetchActiveSession, 10000);
-    return () => clearInterval(interval);
-  }, []);
+    // Refresh detection every 10 seconds if not in a meeting
+    const interval = setInterval(() => {
+      if (!meetingStarted) {
+        fetchActiveSession();
+      }
+    }, 10000);
+
+    return () => {
+      clearInterval(interval);
+      if (jitsiApiRef.current) {
+        jitsiApiRef.current.dispose();
+      }
+    };
+  }, [meetingStarted]);
+
+  useEffect(() => {
+    if (!meetingStarted || !jitsiData) return;
+
+    const initializeMeeting = () => {
+      console.log("🚀 Initializing Student Jitsi");
+
+      if (!window.JitsiMeetExternalAPI) {
+        console.error("❌ Jitsi API missing");
+        setMeetingLoading(false);
+        toast.error("Meeting engine not loaded. Please refresh.");
+        return;
+      }
+
+      const container = document.getElementById("jitsi-container");
+      if (!container) {
+        console.error("❌ Jitsi container missing");
+        // Retry once if container not found
+        return;
+      }
+
+      try {
+        const options = {
+          roomName: jitsiData.room,
+          width: '100%',
+          height: 700,
+          parentNode: container,
+          jwt: jitsiData.token,
+          userInfo: {
+            displayName: currentUser?.name || 'Student'
+          },
+          interfaceConfigOverwrite: {
+            SHOW_JITSI_WATERMARK: false,
+            SHOW_BRAND_WATERMARK: false,
+          },
+          configOverwrite: {
+            startWithAudioMuted: true,
+            disableInviteFunctions: true,
+          }
+        };
+
+        const api = new window.JitsiMeetExternalAPI('8x8.vc', options);
+        jitsiApiRef.current = api;
+        
+        // ✅ Hide loading overlay immediately after iframe initialization
+        setMeetingLoading(false);
+
+        api.addEventListeners({
+          videoConferenceJoined: handleJoined,
+          videoConferenceLeft: handleLeft
+        });
+
+        console.log("✅ Jitsi initialized successfully");
+
+      } catch (error) {
+        console.error("❌ Jitsi initialization failed", error);
+        setMeetingLoading(false);
+        toast.error("Failed to load meeting interface");
+      }
+    };
+
+    // Small delay to ensure the DOM element #jitsi-container is rendered
+    const timer = setTimeout(initializeMeeting, 500);
+    return () => clearTimeout(timer);
+  }, [meetingStarted, jitsiData]);
 
   const fetchActiveSession = async () => {
     try {
@@ -36,48 +135,70 @@ const StudentJoinSession = () => {
       setJoining(true);
       const token = localStorage.getItem('token');
       
-      // 1. Sync Attendance
-      await axios.post('/api/sessions/join', 
+      // Fetch Secure Meeting Access Token
+      const response = await axios.post('/api/sessions/token',
         { sessionId: activeSession._id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      // 2. Fetch Secure Meeting Access Token
-      const jitsiResponse = await axios.post('/api/sessions/token',
-        { sessionId: activeSession._id },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      setJitsiData(response.data.data);
+      setMeetingStarted(true);
+      setMeetingLoading(true);
+      toast.success('Secure Channel Synchronized!');
       
-      toast.success('Attendance and Secure Channel Synchronized!');
-      
-      // 3. Open Secure Room
-      if (jitsiResponse.data.data.meetingUrl) {
-        window.open(jitsiResponse.data.data.meetingUrl, '_blank');
-      }
-      
-      fetchActiveSession(); // Re-fetch to get isJoined status
     } catch (error) {
       console.error('Join error:', error);
-      toast.error(error.response?.data?.message || 'Failed to join session');
+      toast.error(error.response?.data?.message || 'Failed to initialize session');
     } finally {
       setJoining(false);
     }
   };
 
-  const handleRejoin = async () => {
-    if (!activeSession) return;
+  const handleJoined = async () => {
+    console.log("✅ Student actually joined meeting");
+    
+    if (hasConfirmedJoin.current) return;
+    hasConfirmedJoin.current = true;
+    
+    // ⏱️ Delay attendance recording by 3 seconds to ensure stable connection
+    setTimeout(async () => {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.post('/api/sessions/join', 
+          { sessionId: activeSession._id },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } catch (error) {
+        console.error('Error recording join time:', error);
+      }
+    }, 3000);
+  };
+
+  const handleLeft = async () => {
+    console.log("🚪 Student left meeting");
+    setMeetingStarted(false);
+    setMeetingLoading(false);
+    hasConfirmedJoin.current = false;
+    
+    if (jitsiApiRef.current) {
+      jitsiApiRef.current.dispose();
+      jitsiApiRef.current = null;
+    }
+    setJitsiData(null);
+    
     try {
       const token = localStorage.getItem('token');
-      const jitsiResponse = await axios.post('/api/sessions/token',
-        { sessionId: activeSession._id },
+      await axios.post(`/api/sessions/${activeSession._id}/leave`, 
+        {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      if (jitsiResponse.data.data.meetingUrl) {
-        window.open(jitsiResponse.data.data.meetingUrl, '_blank');
-      }
+      toast.success('Session recorded successfully');
     } catch (error) {
-      toast.error('Failed to regenerate secure access token');
+      console.error('Error recording leave time:', error);
     }
+    
+    // Refresh session data
+    fetchActiveSession();
   };
 
   if (loading) {
@@ -88,6 +209,59 @@ const StudentJoinSession = () => {
     );
   }
 
+  // Meeting View
+  if (meetingStarted) {
+    return (
+      <div className="animate-in fade-in duration-700 max-w-6xl mx-auto">
+        <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
+          <div>
+            <div className="flex items-center space-x-3 mb-2">
+              <div className={`w-2 h-2 rounded-full ${!meetingLoading ? 'bg-green-500' : 'bg-[#FFD700] animate-pulse'}`}></div>
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">
+                {!meetingLoading ? 'SECURE CHANNEL ACTIVE' : 'INITIALIZING BROADCAST...'}
+              </span>
+            </div>
+            <h2 className="text-3xl font-black text-[#1A1A1A] tracking-tighter italic uppercase">
+              {activeSession?.classId?.className} <span className="text-[#FFD700]">Live</span>
+            </h2>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+             <div className="px-6 py-3 bg-white border border-gray-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-[#1A1A1A] shadow-sm flex items-center">
+                <Clock size={14} className="mr-2 text-[#FFD700]" />
+                {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+             </div>
+             <button 
+               onClick={handleLeft}
+               className="px-6 py-3 bg-red-50 text-red-600 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-sm flex items-center hover:bg-red-600 hover:text-white transition-all"
+             >
+                <X size={14} className="mr-2" />
+                Exit Classroom
+             </button>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-white relative min-h-[700px] flex flex-col">
+          {meetingLoading && (
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#F8F9FA]/90 backdrop-blur-sm">
+              <div className="relative">
+                <Zap className="text-[#FFD700] animate-bounce mb-4" size={48} />
+                <div className="absolute -inset-4 bg-[#FFD700]/20 rounded-full animate-ping"></div>
+              </div>
+              <p className="text-sm font-black text-[#1A1A1A] uppercase tracking-[0.3em] italic">Syncing with Faculty Broadcast...</p>
+              <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-widest">Securing End-to-End Tunnel</p>
+            </div>
+          )}
+          <div 
+            id="jitsi-container" 
+            className="w-full h-[700px] rounded-3xl"
+          ></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Join View
   return (
     <div className="animate-in slide-in-from-bottom duration-700 max-w-4xl mx-auto py-6">
       <div className="text-center mb-12">
@@ -115,7 +289,7 @@ const StudentJoinSession = () => {
                         {activeSession.classId?.className}
                      </h3>
                      <p className="text-gray-500 text-lg font-bold italic mb-0">Faculty Representative: {activeSession.teacherId?.name}</p>
-                     <p className="text-gray-400 text-sm font-medium italic mb-8 uppercase tracking-tighter italic">JWT Authentication Required</p>
+                     <p className="text-gray-400 text-sm font-medium italic mb-8 uppercase tracking-tighter">JWT Authentication Required</p>
                      
                      <div className="flex flex-wrap justify-center md:justify-start gap-4">
                         <div className="px-6 py-3 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-[#1A1A1A] shadow-sm flex items-center">
@@ -130,36 +304,20 @@ const StudentJoinSession = () => {
                   </div>
 
                   <div className="md:w-72 w-full">
-                     {activeSession.isJoined ? (
-                        <div className="flex flex-col gap-4 animate-in zoom-in">
-                           <div className="bg-green-500 rounded-[2rem] p-8 text-center shadow-xl shadow-green-200/50">
-                              <CheckCircle2 className="text-white mx-auto mb-4" size={40} />
-                              <p className="text-white text-[10px] font-black uppercase tracking-widest italic leading-none">Access<br/>Synchronized</p>
-                           </div>
-                           <button 
-                             onClick={handleRejoin}
-                             className="w-full py-4 bg-[#1A1A1A] text-[#FFD700] rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-[#FFD700] hover:text-[#1A1A1A] transition-all flex items-center justify-center"
-                           >
-                              <Video size={16} className="mr-2" />
-                              Launch Meeting
-                           </button>
-                        </div>
-                     ) : (
-                        <button 
-                           onClick={handleJoin}
-                           disabled={joining}
-                           className="w-full aspect-square bg-[#1A1A1A] text-[#FFD700] rounded-[2.5rem] flex flex-col items-center justify-center group hover:bg-[#FFD700] hover:text-[#1A1A1A] transition-all duration-500 shadow-2xl shadow-gray-900/20 active:scale-95"
-                        >
-                           {joining ? (
-                              <Loader2 className="animate-spin" size={40} />
-                           ) : (
-                              <>
-                                 <Video size={48} className="mb-4 group-hover:scale-110 transition-transform" />
-                                 <span className="text-sm font-black uppercase tracking-[0.2em] italic">JOIN</span>
-                              </>
-                           )}
-                        </button>
-                     )}
+                     <button 
+                        onClick={handleJoin}
+                        disabled={joining}
+                        className="w-full aspect-square bg-[#1A1A1A] text-[#FFD700] rounded-[2.5rem] flex flex-col items-center justify-center group hover:bg-[#FFD700] hover:text-[#1A1A1A] transition-all duration-500 shadow-2xl shadow-gray-900/20 active:scale-95"
+                     >
+                        {joining ? (
+                           <Loader2 className="animate-spin" size={40} />
+                        ) : (
+                           <>
+                              <Video size={48} className="mb-4 group-hover:scale-110 transition-transform" />
+                              <span className="text-sm font-black uppercase tracking-[0.2em] italic">Enter Classroom</span>
+                           </>
+                        )}
+                     </button>
                   </div>
                </div>
             </div>

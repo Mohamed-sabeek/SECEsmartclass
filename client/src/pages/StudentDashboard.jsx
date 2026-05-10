@@ -43,6 +43,15 @@ const StudentDashboard = () => {
 
   useEffect(() => {
     fetchProfile();
+    
+    // Listen for tab switch events
+    const handleSwitchTab = (e) => {
+      if (e.detail) {
+        setActiveTab(e.detail);
+      }
+    };
+    window.addEventListener('switchTab', handleSwitchTab);
+    return () => window.removeEventListener('switchTab', handleSwitchTab);
   }, []);
 
   const fetchProfile = async () => {

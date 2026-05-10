@@ -3,7 +3,7 @@ import { BookOpen, Video, Users, ArrowRight, TrendingUp, Zap, LayoutDashboard } 
 const TeacherDashboardHome = ({ teacher, setActiveTab }) => {
   const stats = [
     { label: 'Assigned Classes', value: teacher?.assignedClasses?.length || 0, icon: BookOpen, color: 'blue' },
-    { label: 'Active Sessions', value: 0, icon: Video, color: 'emerald' },
+    { label: 'Total Sessions', value: teacher?.totalSessions || 0, icon: Video, color: 'emerald' },
     { label: 'Total Attendance', value: 0, icon: Users, color: 'purple' }
   ];
 
@@ -77,7 +77,7 @@ const TeacherDashboardHome = ({ teacher, setActiveTab }) => {
           </div>
           <div className="text-center">
              <p className="text-gray-800 font-black text-lg">Next Step Recommendation</p>
-             <p className="text-gray-500 text-sm max-w-sm">You have no active sessions. Check "History" for past performance or "Live Session" to begin a new class.</p>
+             <p className="text-gray-500 text-sm max-w-sm">Check "Reports" for past performance or "Live Session" to begin a new class.</p>
           </div>
       </div>
     </div>

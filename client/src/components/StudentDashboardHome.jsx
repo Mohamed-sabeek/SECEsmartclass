@@ -4,12 +4,10 @@ import {
   Users, 
   CheckCircle, 
   Clock, 
-  ArrowUpRight, 
   GraduationCap, 
   Radio, 
   Video, 
-  ArrowRight, 
-  Loader2 
+  ArrowRight
 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -22,7 +20,6 @@ const StudentDashboardHome = ({ user }) => {
   });
   const [activeSession, setActiveSession] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [joining, setJoining] = useState(false);
 
   useEffect(() => {
     fetchStats();
@@ -59,39 +56,9 @@ const StudentDashboardHome = ({ user }) => {
     }
   };
 
-  const handleAutoJoin = async () => {
-    if (!activeSession) return;
-    
-    try {
-      setJoining(true);
-      const token = localStorage.getItem('token');
-      
-      // 1. Synchronize Attendance
-      await axios.post('/api/sessions/join', 
-        { sessionId: activeSession._id },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      // 2. Fetch Secure Jitsi JWT Token for Role-based Access
-      const jitsiResponse = await axios.post('/api/sessions/token',
-        { sessionId: activeSession._id },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      toast.success('Joined session successfully!');
-      
-      // 3. Launch Secure Iframe Broadcast
-      if (jitsiResponse.data.data.meetingUrl) {
-        window.open(jitsiResponse.data.data.meetingUrl, '_blank');
-      }
-      
-      fetchActiveSession();
-      fetchStats();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to join session');
-    } finally {
-      setJoining(false);
-    }
+  const handleAutoJoin = () => {
+    const event = new CustomEvent('switchTab', { detail: 'join' });
+    window.dispatchEvent(event);
   };
 
   const statItems = [
@@ -133,8 +100,7 @@ const StudentDashboardHome = ({ user }) => {
                     {activeSession.classId?.className}
                  </h4>
                  <p className="text-xs text-gray-400 mb-6 font-medium">Faculty: {activeSession.teacherId?.name}</p>
-                 
-                 {activeSession.isJoined ? (
+                                  {activeSession.isJoined ? (
                     <div className="flex flex-col gap-3">
                        <div className="w-full py-4 bg-green-500/20 border border-green-500/30 text-green-400 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center space-x-2">
                           <CheckCircle size={14} />
@@ -150,10 +116,9 @@ const StudentDashboardHome = ({ user }) => {
                  ) : (
                     <button 
                       onClick={handleAutoJoin}
-                      disabled={joining}
                       className="w-full py-4 bg-[#FFD700] text-[#1A1A1A] rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all flex items-center justify-center shadow-lg shadow-yellow-500/10 font-black active:scale-95"
                     >
-                       {joining ? <Loader2 className="animate-spin" size={16} /> : "Join Session Now"}
+                       Join Session Now
                     </button>
                  )}
               </div>
