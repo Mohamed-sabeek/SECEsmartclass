@@ -28,6 +28,7 @@ import TeacherSessionDetails from '../components/TeacherSessionDetails';
 import TeacherSessionReport from '../components/TeacherSessionReport';
 import TeacherProfile from './teacher/TeacherProfile';
 import { useParams, useNavigate } from 'react-router-dom';
+import PasswordWarningBanner from '../components/PasswordWarningBanner';
 
 const TeacherDashboard = () => {
   const { logout, user } = useAuth();
@@ -227,6 +228,10 @@ const TeacherDashboard = () => {
         {/* Dynamic Sub-page Container */}
         <div className="flex-1 overflow-y-auto p-10">
           <div className="max-w-7xl mx-auto">
+            <PasswordWarningBanner onActionClick={() => {
+              setActiveTab('profile');
+              navigate('/teacher/profile');
+            }} />
             {loading ? (
               <div className="h-96 flex items-center justify-center">
                 <div className="w-16 h-16 border-4 border-[#FFD700] border-t-transparent rounded-full animate-spin"></div>

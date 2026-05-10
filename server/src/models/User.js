@@ -55,7 +55,7 @@ const userSchema = new mongoose.Schema(
       subjects: { type: [String], default: [] },
       _id: false
     },
-    mustChangePassword: { type: Boolean, default: false },
+    mustChangePassword: { type: Boolean, default: true },
   },
   { timestamps: true }
 )

@@ -23,6 +23,7 @@ import StudentHistory from '../components/StudentHistory';
 import StudentTeachers from '../components/StudentTeachers';
 import StudentProfile from './student/StudentProfile';
 import { useNavigate, useParams } from 'react-router-dom';
+import PasswordWarningBanner from '../components/PasswordWarningBanner';
 
 const StudentDashboard = () => {
   const { logout, user } = useAuth();
@@ -196,6 +197,10 @@ const StudentDashboard = () => {
         {/* Dynamic Sub-page Container */}
         <div className="flex-1 overflow-y-auto p-10">
           <div className="max-w-7xl mx-auto">
+            <PasswordWarningBanner onActionClick={() => {
+              setActiveTab('profile');
+              navigate('/student/profile');
+            }} />
             {loading ? (
               <div className="h-96 flex items-center justify-center">
                 <div className="w-16 h-16 border-4 border-[#FFD700] border-t-transparent rounded-full animate-spin"></div>

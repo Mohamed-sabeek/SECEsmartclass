@@ -5,7 +5,7 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
-  const [role, setRole] = useState(null);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -15,33 +15,48 @@ export const AuthProvider = ({ children }) => {
     const storedUser = localStorage.getItem('user');
     
     if (storedToken && storedUser) {
-      const user = JSON.parse(storedUser);
-      setToken(storedToken);
-      setRole(user.role);
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setToken(storedToken);
+        setUser(parsedUser);
+      } catch (e) {
+        console.error("Failed to parse stored user", e);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
     }
     setLoading(false);
   }, []);
 
-  const login = (newToken, user) => {
+  const login = (newToken, userData) => {
     setToken(newToken);
-    setRole(user.role);
+    setUser(userData);
     localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem('user', JSON.stringify(userData));
   };
 
   const logout = () => {
     setToken(null);
-    setRole(null);
+    setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     navigate('/', { replace: true });
   };
 
+  const updateUserInfo = (newData) => {
+    const updatedUser = { ...user, ...newData };
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  };
+
   const value = {
     token,
-    role,
+    user,
+    role: user?.role || null,
+    mustChangePassword: user?.mustChangePassword || false,
     login,
     logout,
+    updateUserInfo,
     isAuthenticated: !!token,
     loading
   };

@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
-import { Mail, Hash, BookOpen, Calendar, User as UserIcon, GraduationCap, Building2, Camera, Edit2, Save, X, Loader2 } from "lucide-react";
+import { Mail, Hash, BookOpen, Calendar, User as UserIcon, GraduationCap, Building2, Camera, Edit2, Save, X, Loader2, ShieldCheck } from "lucide-react";
 import toast from "react-hot-toast";
 import defaultAvatar from "../../assets/default-avatar.jpg";
+import ChangePasswordForm from "../../components/ChangePasswordForm";
 
 const getYearLabel = (year) => {
   if (year === 1) return "1st Year";
@@ -273,6 +274,10 @@ const StudentProfile = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="mb-12">
+        <ChangePasswordForm />
       </div>
     </div>
   );
