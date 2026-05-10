@@ -114,6 +114,29 @@ const StudentJoinSession = () => {
     return () => clearTimeout(timer);
   }, [meetingStarted, jitsiData]);
 
+  // Engagement Monitoring: Tab Switch Tracking
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      // ONLY trigger when tab becomes hidden AND meeting is active
+      if (document.visibilityState === 'hidden' && meetingStarted && activeSession && hasConfirmedJoin.current) {
+        console.log("🕵️ Student switched tab - Logging engagement");
+        try {
+          const token = localStorage.getItem('token');
+          await axios.post('/api/engagement/tab-switch', 
+            { sessionId: activeSession._id },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+        } catch (error) {
+          // Fail silently to not disturb the student experience
+          console.warn('Engagement monitoring paused: ', error.message);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [meetingStarted, activeSession]);
+
   const fetchActiveSession = async () => {
     try {
       const token = localStorage.getItem('token');

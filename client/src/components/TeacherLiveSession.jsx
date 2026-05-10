@@ -20,6 +20,7 @@ const TeacherLiveSession = ({ teacher, preSelectedClassId, preSelectedSubject })
   }, [preSelectedClassId, preSelectedSubject]);
   const jitsiContainerRef = useRef(null);
   const jitsiApiRef = useRef(null);
+  const isEndingRef = useRef(false);
 
   useEffect(() => {
     fetchActiveSession();
@@ -138,10 +139,12 @@ const TeacherLiveSession = ({ teacher, preSelectedClassId, preSelectedSubject })
   };
 
   const handleEndClass = async (fromJitsi = false) => {
-    if (!activeSession) return;
-    if (isProcessing) return;
+    if (!activeSession || isEndingRef.current) return;
+    
+    console.log(`🔥 End session triggered (fromJitsi: ${fromJitsi})`);
 
     try {
+      isEndingRef.current = true;
       setIsProcessing(true);
       const token = localStorage.getItem('token');
       
@@ -173,6 +176,7 @@ const TeacherLiveSession = ({ teacher, preSelectedClassId, preSelectedSubject })
          navigate(`/teacher/reports/${activeSession._id}`);
        } else {
          toast.error('Failed to end session');
+         isEndingRef.current = false;
        }
     } finally {
       setIsProcessing(false);

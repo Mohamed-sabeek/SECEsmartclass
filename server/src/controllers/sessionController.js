@@ -2,6 +2,7 @@ const Session = require('../models/Session');
 const User = require('../models/User');
 const mongoose = require('mongoose');
 const Attendance = require('../models/Attendance');
+const Engagement = require('../models/Engagement');
 const asyncHandler = require('../utils/asyncHandler');
 const jwt = require('jsonwebtoken');
 const { sendEmail } = require('../utils/sendEmail');
@@ -535,8 +536,12 @@ const getSessionReport = asyncHandler(async (req, res) => {
     const totalSecs = totalSessionSeconds % 60;
     const totalDurationFormatted = totalMins > 0 ? `${totalMins} mins ${totalSecs} secs` : `${totalSecs} secs`;
 
+    // Fetch all engagement data for this session
+    const engagementData = await Engagement.find({ sessionId: session._id });
+
     const reportStudents = allStudentsInClass.map(student => {
       const studentEntry = session.students.find(s => s.studentId.toString() === student._id.toString());
+      const studentEngagement = engagementData.find(e => e.studentId.toString() === student._id.toString());
       
       let firstJoinTime = null;
       let lastLeaveTime = null;
@@ -568,6 +573,7 @@ const getSessionReport = asyncHandler(async (req, res) => {
         : '0 secs';
 
       return {
+        studentId: student._id,
         studentName: student.name,
         email: student.email,
         firstJoinTime,
@@ -576,7 +582,8 @@ const getSessionReport = asyncHandler(async (req, res) => {
         logCount: logs.length,
         attendedDuration: attendedDurationFormatted,
         attendancePercentage,
-        status
+        status,
+        tabSwitchCount: studentEngagement ? studentEngagement.tabSwitchCount : 0
       };
     });
 

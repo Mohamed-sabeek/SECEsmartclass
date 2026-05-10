@@ -325,6 +325,7 @@ const TeacherSessionReport = () => {
                 <th className="px-10 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Last Leave</th>
                 <th className="px-10 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Duration & %</th>
                 <th className="px-10 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Status</th>
+                <th className="px-10 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Engagement</th>
                 <th className="px-10 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Audit</th>
               </tr>
             </thead>
@@ -386,6 +387,20 @@ const TeacherSessionReport = () => {
                             {student.status === 'Present' ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
                             <span className="text-[9px] font-black uppercase tracking-[0.2em] italic">{student.status}</span>
                          </div>
+                      </td>
+
+                      <td className="px-10 py-6 text-center">
+                        <div className="flex flex-col items-center">
+                           <div className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter ${
+                             student.tabSwitchCount === 0 ? 'bg-green-50 text-green-600' :
+                             student.tabSwitchCount < 3 ? 'bg-blue-50 text-blue-600' :
+                             student.tabSwitchCount < 6 ? 'bg-yellow-50 text-yellow-600' :
+                             'bg-red-50 text-red-600'
+                           }`}>
+                              {student.tabSwitchCount} {student.tabSwitchCount === 1 ? 'Switch' : 'Switches'}
+                           </div>
+                           <span className="text-[8px] font-black text-gray-400 mt-1 uppercase italic tracking-widest">Tab Visibility</span>
+                        </div>
                       </td>
                       <td className="px-10 py-6 text-center">
                         {student.logs?.length > 0 && (

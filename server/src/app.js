@@ -11,6 +11,7 @@ const sessionRoutes = require('./routes/sessionRoutes')
 const teacherRoutes = require('./routes/teacherRoutes')
 const attendanceRoutes = require('./routes/attendanceRoutes')
 const studentRoutes = require('./routes/studentRoutes')
+const engagementRoutes = require('./routes/engagementRoutes')
 
 function createApp() {
   const app = express()
@@ -57,6 +58,7 @@ function createApp() {
   app.use('/api/teacher', teacherRoutes)
   app.use('/api/attendance', attendanceRoutes)
   app.use('/api/student', studentRoutes)
+  app.use('/api/engagement', engagementRoutes)
 
   app.use(notFound)
   app.use(errorHandler)
