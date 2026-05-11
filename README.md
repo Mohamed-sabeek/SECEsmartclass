@@ -73,7 +73,7 @@ Integrates **Jitsi Meet API** for secure, high-fidelity video conferencing direc
 
 ## 🏁 Deployment
 
-- **Frontend**: [https://sece-smartclass.vercel.app](https://sece-smartclass.vercel.app)
+- **Frontend**: [https://sec-esmartclass.vercel.app/](https://sec-esmartclass.vercel.app/)
 - **Backend API**: [https://sece-smartclass.onrender.com](https://sece-smartclass.onrender.com)
 
 ---
