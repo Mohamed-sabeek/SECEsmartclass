@@ -1,101 +1,121 @@
-# 🎓 SECE SmartClass — Advanced Academic Orchestration
+# 🎓 SECE SmartClass — Integrated Academic Management Platform
 
-SECE SmartClass is a premium, real-time classroom management system designed to bridge the gap between physical instruction and digital presence. Featuring a **futuristic, mobile-first interface**, it provides a seamless experience for administrators, faculty, and students to manage academic cycles with millisecond precision.
-
----
-
-## 🚀 Key Innovations
-
-### 1. Futuristic UI/UX Modernization
-The platform has undergone a full visual overhaul, adopting a **high-end, glassmorphic aesthetic**.
-*   **Identity Verification Hub**: A redesigned, split-pane login interface for secure and intuitive entry.
-*   **Command Center Dashboards**: Role-specific portals for Students, Teachers, and Admins with vibrant metrics and real-time status tracking.
-*   **Premium Iconography**: Integrated `lucide-react` for a sharp, modern visual language.
-
-### 2. Mobile-First Responsive Architecture
-Engineered for the modern campus, the entire platform is now **fully responsive**.
-*   **Adaptive Grid Systems**: Dashboards automatically transition from complex desktop layouts to streamlined, touch-optimized mobile views.
-*   **Locked-in Mobile Experience**: Critical management pages (Departments, Roster, Reports) are precision-aligned to eliminate horizontal overflow and ensure seamless administrative control on any device.
-
-### 3. Real-Time Virtual Broadcasts
-The core of SECE SmartClass is its **Automated Live Session Hub**, which integrates **Jitsi JaaS (8x8.vc)** for high-fidelity video conferencing.
-*   **Zero-Code Entry**: Students join via a secure JWT-authenticated bridge—no session codes required.
-*   **Role-Based Access**: System dynamically signs tokens for faculty (**Moderators**) and students (**Participants**).
-*   **Automated Attendance**: Presence is synchronized the moment a student enters the secure video channel.
+SECE SmartClass is a professional, full-stack classroom management ecosystem designed to streamline institutional workflows, automate attendance tracking, and facilitate secure live virtual instruction. Built with a focus on **reliability, responsiveness, and academic integrity**, it provides a unified interface for administrators, faculty, and students.
 
 ---
 
-## 🛠 Features by Persona
+## 🏛️ System Architecture & Workflow
 
-### 👨‍🏫 Faculty Dashboard
-*   **Session Command Center**: Start and manage live video broadcasts directly within the portal.
-*   **Attendance Tracking 2.0**: Searchable rosters with deep academic mapping (Department, Batch, and Section).
-*   **Precision Audit Logs**: View expanded student engagement data, including **Tab Visibility (Engagement Monitoring)** and join/leave timestamps.
-*   **Historical Archives**: Access detailed reports of past sessions and exportable attendance trends (CSV/PDF).
+The platform operates through three distinct entry points, each tailored to specific institutional roles:
 
-### 🎓 Student Dashboard
-*   **Academic Command Center**: View personal attendance stats and percentage across all subjects with futuristic progress tracking.
-*   **My Teachers Section**: Intelligent academic mapping displaying assigned faculty by Department and Batch/Section.
-*   **Profile Security**: Modernized profile management with secure Cloudinary-powered photo uploads and a resilient password reset flow.
-*   **Sync Status**: Real-time presence verification during live broadcasts.
-
-### 🔒 Administrator Portal
-*   **Institutional Mapping**: Full CRUD controls for Departments, Classes (Batches), and Faculty assignments with unified administrative viewing.
-*   **User Directory**: Unified identity management for the entire campus population.
-*   **Responsive Management**: Mobile-optimized administrative tables for managing academic units on the go.
+*   **Administrator**: Manages the core institutional structure, including Departments, Classes (Batches), and Teacher-Subject mappings.
+*   **Teacher**: Conducts live sessions, manages subject-specific rosters, and monitors real-time student engagement and attendance analytics.
+*   **Student**: Accesses a personalized learning portal to join active sessions, track attendance history, and manage academic profiles.
 
 ---
 
-## 💻 Tech Stack
-*   **Frontend**: React.js (Vite), Tailwind CSS, Headless UI, Lucide Icons.
-*   **Backend**: Node.js, Express.js, Multer (Transient storage).
-*   **Cloud Services**: **Cloudinary** (Image CDN), **Jitsi JaaS** (Video).
-*   **Database**: MongoDB (Mongoose ODM).
-*   **Security**: JWT (JSON Web Tokens), RS256 Asymmetric Encryption, Bcrypt Password Hashing.
+## 🚀 Core Capabilities
+
+### 1. Unified Academic Mapping
+The system enforces a strict **Teacher → Class → Subject** relationship, ensuring that students only see the correct assigned faculty for their specific batch and academic year.
+
+### 2. Automated Live Sessions
+Integrates **Jitsi Meet API** for secure, high-fidelity video conferencing directly within the dashboard.
+*   **Seamless Authentication**: Students join via secure JWT-authenticated bridges without requiring external session codes.
+*   **Role-Based Access**: Automatic moderator privileges for faculty and participant roles for students.
+*   **Session Persistence**: Advanced handling of browser refreshes to ensure active sessions remain connected for both parties.
+
+### 3. Precision Attendance Tracking
+*   **Event-Driven Logging**: Attendance is captured based on actual meeting join/leave events via the Jitsi API.
+*   **Engagement Monitoring**: Tracks student tab visibility to provide insights into classroom participation.
+*   **Analytical Reporting**: Generates automated attendance percentages and historical trends for institutional audits.
+
+### 4. Professional Design System
+*   **Premium Dashboard UI**: A clean, modern interface utilizing a gold-and-white aesthetic for high readability.
+*   **Full Responsiveness**: Optimized grid systems that adapt seamlessly from desktop administration to mobile participation.
+*   **Accessibility**: Built with Headless UI to ensure high standards of interaction and consistency.
 
 ---
 
-## 🏁 Getting Started
+## 💻 Technical Stack
+
+### **Frontend**
+- **Framework**: React.js 19 (Vite)
+- **Styling**: Tailwind CSS 3.4
+- **Components**: Headless UI
+- **Icons**: Lucide React
+- **Analytics**: Recharts
+
+### **Backend**
+- **Environment**: Node.js & Express.js 5
+- **Database**: MongoDB (via Mongoose ODM)
+- **File Management**: Multer (Local/Transient)
+- **Security**: JWT (JSON Web Tokens), Bcryptjs (Password Hashing)
+
+### **Cloud Services**
+- **Media**: Cloudinary (Image Hosting & CDN)
+- **Communication**: Jitsi Meet API (Video Conferencing)
+- **Notifications**: Resend API / Nodemailer (Email Alerts)
+
+---
+
+## 📸 Screenshots
+
+| Login Interface | Teacher Dashboard |
+| :---: | :---: |
+| ![Login Page Placeholder](https://via.placeholder.com/400x225?text=Login+Interface) | ![Teacher Dashboard Placeholder](https://via.placeholder.com/400x225?text=Teacher+Dashboard) |
+
+| Live Session Hub | Attendance Analytics |
+| :---: | :---: |
+| ![Live Session Placeholder](https://via.placeholder.com/400x225?text=Live+Session+Interface) | ![Analytics Placeholder](https://via.placeholder.com/400x225?text=Attendance+Analytics) |
+
+---
+
+## 🏁 Deployment
+
+- **Frontend**: [https://sece-smartclass.vercel.app](https://sece-smartclass.vercel.app)
+- **Backend API**: [https://sece-smartclass-api.example.com](https://sece-smartclass-api.example.com) *(Update with actual backend URL)*
+
+---
+
+## ⚙️ Getting Started
 
 ### 1. Prerequisites
-*   Node.js (v18+)
-*   MongoDB Atlas Account
-*   Jitsi JaaS Account & Cloudinary Account
+- Node.js (v18+)
+- MongoDB Atlas Account
+- Cloudinary & Jitsi JaaS Credentials
 
-### 2. Environment Setup
+### 2. Environment Configuration
 Create a `.env` file in the `server/` directory:
 ```env
 PORT=5000
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_backend_auth_secret
 
-# Jitsi JaaS (8x8.vc)
+# Jitsi API Configuration
 JITSI_APP_ID=your_jaas_app_id
 JITSI_API_KEY_ID=your_api_key_id
 JITSI_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
 
-# Cloudinary
+# Media Storage
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 ```
 
-### 3. Installation
-```powershell
-# Install Dependencies
-cd server; npm install
-cd ../client; npm install
-```
+### 3. Installation & Local Development
+```bash
+# Install all dependencies
+cd server && npm install
+cd ../client && npm install
 
-### 4. Running the Project
-```powershell
-# Start Backend
-cd server; npm run dev
+# Run Backend (Port 5000)
+cd server && npm run dev
 
-# Start Frontend
-cd client; npm run dev
+# Run Frontend (Port 5173)
+cd client && npm run dev
 ```
 
 ---
 
-© 2026 SECE SmartClass. Powering the next generation of academic excellence.
+© 2026 SECE SmartClass. Dedicated to excellence in digital academic infrastructure.
