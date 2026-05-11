@@ -115,6 +115,11 @@ cd server && npm run dev
 # Run Frontend (Port 5173)
 cd client && npm run dev
 ```
+---
+## 👨‍💻 Author
+
+Developed by Mohamed Sabeek H  
+SECE SmartClass Project — 2026
 
 ---
 
