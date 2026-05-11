@@ -263,14 +263,14 @@ const deleteUser = asyncHandler(async (req, res) => {
   }
 });
 
-// Assign teacher to multiple classes
+// Assign teacher to multiple classes with specific subjects
 const assignTeacherToClasses = async (req, res) => {
   try {
-    const { teacherId, classIds } = req.body;
+    const { teacherId, classIds, classAssignments } = req.body;
 
     // 1. Validate input
-    if (!teacherId || !Array.isArray(classIds)) {
-      return res.status(400).json({ message: 'Teacher ID and an array of Class IDs are required' });
+    if (!teacherId || (!Array.isArray(classIds) && !Array.isArray(classAssignments))) {
+      return res.status(400).json({ message: 'Teacher ID and assignments are required' });
     }
 
     // 2. Find teacher and validate role
@@ -283,9 +283,15 @@ const assignTeacherToClasses = async (req, res) => {
       return res.status(400).json({ message: 'Assigned user must be a teacher' });
     }
 
-    // 3. Prevent duplicates and strip invalid IDs
-    const validClassIds = classIds.filter(id => id && id.trim() !== "");
-    teacher.assignedClasses = [...new Set(validClassIds)];
+    // 3. Process assignments
+    if (classAssignments && Array.isArray(classAssignments)) {
+      teacher.classAssignments = classAssignments;
+      // Pre-save hook in User model will sync assignedClasses
+    } else if (classIds && Array.isArray(classIds)) {
+      // Backward compatibility for simple class ID array
+      const validClassIds = classIds.filter(id => id && id.trim() !== "");
+      teacher.assignedClasses = [...new Set(validClassIds)];
+    }
     
     // 4. Double check for invalid classId on the teacher object itself (cleanup)
     if (teacher.classId === "" || teacher.classId === null) {
@@ -297,7 +303,8 @@ const assignTeacherToClasses = async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Classes assigned successfully',
-      assignedClasses: teacher.assignedClasses
+      assignedClasses: teacher.assignedClasses,
+      classAssignments: teacher.classAssignments
     });
   } catch (error) {
     console.error('ASSIGN ERROR:', error);

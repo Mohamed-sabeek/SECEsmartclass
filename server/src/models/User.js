@@ -45,6 +45,11 @@ const userSchema = new mongoose.Schema(
       ref: 'Class',
       set: v => v === "" || v === null ? undefined : v
     }],
+    classAssignments: [{
+      classId: { type: mongoose.Schema.Types.ObjectId, ref: 'Class' },
+      subject: { type: String },
+      _id: false
+    }],
     studentDetails: {
       rollNo: { type: String, trim: true },
       admissionYear: { type: Number },
@@ -68,6 +73,11 @@ userSchema.pre('validate', function() {
   
   if (this.assignedClasses && Array.isArray(this.assignedClasses)) {
     this.assignedClasses = this.assignedClasses.filter(id => id && id !== "");
+  }
+
+  // Ensure assignedClasses stays in sync with classAssignments if provided
+  if (this.classAssignments && Array.isArray(this.classAssignments) && this.isModified('classAssignments')) {
+    this.assignedClasses = this.classAssignments.map(a => a.classId);
   }
 });
 

@@ -111,20 +111,30 @@ const TeacherClasses = ({ teacher, assignedClasses }) => {
                 <div className="mb-6">
                   <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2">Assigned Subjects</label>
                   <div className="flex flex-wrap gap-1.5">
-                    {subjects.length > 0 ? (
-                      subjects.map((sub, i) => (
-                        <button 
-                          key={i}
-                          onClick={() => handleStartNavigation(cls._id, sub)}
-                          disabled={isLive}
-                          className="px-2 py-1 bg-gray-50 hover:bg-[#FFD700] text-gray-600 hover:text-[#1A1A1A] border border-gray-100 rounded-lg text-[9px] font-black transition-all active:scale-95 disabled:opacity-50 disabled:hover:bg-gray-50"
-                        >
-                          {sub}
-                        </button>
-                      ))
-                    ) : (
-                      <span className="text-[10px] text-gray-300 italic">No subjects defined</span>
-                    )}
+                    {(() => {
+                      // Get subjects specifically assigned to this class
+                      const assignedToThisClass = teacher?.classAssignments
+                        ?.filter(a => (a.classId?._id || a.classId).toString() === cls._id.toString())
+                        ?.map(a => a.subject) || [];
+                      
+                      // Use assigned subjects if they exist, otherwise fallback to global subjects
+                      const subjectsToDisplay = assignedToThisClass.length > 0 ? assignedToThisClass : subjects;
+
+                      if (subjectsToDisplay.length > 0) {
+                        return subjectsToDisplay.map((sub, i) => (
+                          <button 
+                            key={i}
+                            onClick={() => handleStartNavigation(cls._id, sub)}
+                            disabled={isLive}
+                            className="px-2 py-1 bg-gray-50 hover:bg-[#FFD700] text-gray-600 hover:text-[#1A1A1A] border border-gray-100 rounded-lg text-[9px] font-black transition-all active:scale-95 disabled:opacity-50 disabled:hover:bg-gray-50"
+                          >
+                            {sub}
+                          </button>
+                        ));
+                      } else {
+                        return <span className="text-[10px] text-gray-300 italic">No subjects defined</span>;
+                      }
+                    })()}
                   </div>
                 </div>
 

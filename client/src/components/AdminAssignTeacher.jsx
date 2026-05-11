@@ -13,7 +13,7 @@ const AdminAssignTeacher = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTeacher, setSelectedTeacher] = useState(null);
-  const [selectedClasses, setSelectedClasses] = useState([]); // Array of IDs
+  const [selectedAssignments, setSelectedAssignments] = useState([]); // Array of { classId, subject }
   const [departments, setDepartments] = useState([]);
   const [filters, setFilters] = useState({
     search: '',
@@ -77,20 +77,42 @@ const AdminAssignTeacher = () => {
 
   const handleTeacherSelect = (teacher) => {
     setSelectedTeacher(teacher);
-    // Pre-select already assigned classes (strip any junk data)
-    const existingClasses = (teacher.assignedClasses || [])
-      .map(cls => typeof cls === 'string' ? cls : cls._id)
-      .filter(id => id && id.trim() !== "");
-    setSelectedClasses(existingClasses);
+    // Pre-select already assigned classes with their subjects
+    const existingAssignments = (teacher.classAssignments || []).map(a => ({
+      classId: a.classId._id || a.classId,
+      subject: a.subject
+    }));
+
+    // Fallback for legacy data without classAssignments
+    if (existingAssignments.length === 0 && teacher.assignedClasses?.length > 0) {
+      teacher.assignedClasses.forEach(cls => {
+        existingAssignments.push({
+          classId: typeof cls === 'string' ? cls : cls._id,
+          subject: teacher.teacherDetails?.subjects?.[0] || ''
+        });
+      });
+    }
+
+    setSelectedAssignments(existingAssignments);
     setError('');
   };
 
   const toggleClass = (classId) => {
-    if (selectedClasses.includes(classId)) {
-      setSelectedClasses(selectedClasses.filter(id => id !== classId));
+    const isAssigned = selectedAssignments.some(a => a.classId === classId);
+    if (isAssigned) {
+      setSelectedAssignments(selectedAssignments.filter(a => a.classId !== classId));
     } else {
-      setSelectedClasses([...selectedClasses, classId]);
+      setSelectedAssignments([...selectedAssignments, { 
+        classId, 
+        subject: selectedTeacher?.teacherDetails?.subjects?.[0] || '' 
+      }]);
     }
+  };
+
+  const updateAssignmentSubject = (classId, subject) => {
+    setSelectedAssignments(selectedAssignments.map(a => 
+      a.classId === classId ? { ...a, subject } : a
+    ));
   };
 
   const handleAssign = async () => {
@@ -98,8 +120,15 @@ const AdminAssignTeacher = () => {
       toast.error('Please select a teacher first');
       return;
     }
-    if (selectedClasses.length === 0) {
+    if (selectedAssignments.length === 0) {
       toast.error('Please select at least one class');
+      return;
+    }
+
+    // Validate that all assignments have a subject
+    const missingSubject = selectedAssignments.some(a => !a.subject);
+    if (missingSubject) {
+      toast.error('Please select a subject for all assigned classes');
       return;
     }
 
@@ -109,7 +138,7 @@ const AdminAssignTeacher = () => {
       const token = localStorage.getItem('token');
       const response = await axios.post('/api/users/assign-classes', {
         teacherId: selectedTeacher._id,
-        classIds: selectedClasses
+        classAssignments: selectedAssignments
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -199,7 +228,7 @@ const AdminAssignTeacher = () => {
                 </div>
                 <div className="mt-4 sm:mt-0 flex gap-4">
                   <div className="px-4 py-2 bg-yellow-50 border border-[#FFD700]/20 rounded-xl text-[#FFD700] font-black text-xs uppercase tracking-widest">
-                    {selectedClasses.length} Assigned
+                    {selectedAssignments.length} Assigned
                   </div>
                 </div>
               </div>
@@ -248,37 +277,56 @@ const AdminAssignTeacher = () => {
                     <div className="w-2 h-2 rounded-full bg-emerald-500 mr-2"></div>
                     Assigned Classes
                   </h4>
-                  <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                    {classes.filter(cls => selectedClasses.includes(cls._id)).length === 0 ? (
+                  <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 pb-40 custom-scrollbar">
+                    {classes.filter(cls => selectedAssignments.some(a => a.classId === cls._id)).length === 0 ? (
                       <div className="py-12 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
                         <p className="text-xs font-bold text-gray-400 italic">No classes assigned yet</p>
                       </div>
                     ) : (
                       classes
-                        .filter(cls => selectedClasses.includes(cls._id))
-                        .map(cls => (
-                          <div key={cls._id} className="group p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center">
-                                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center mr-3">
-                                  <LayoutGrid size={16} />
+                        .filter(cls => selectedAssignments.some(a => a.classId === cls._id))
+                        .map(cls => {
+                          const assignment = selectedAssignments.find(a => a.classId === cls._id);
+                          return (
+                            <div key={cls._id} className="group p-5 bg-white border border-gray-100 rounded-[1.5rem] shadow-sm hover:shadow-md transition-all">
+                              <div className="flex items-start justify-between mb-4">
+                                <div className="flex items-center">
+                                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center mr-3">
+                                    <LayoutGrid size={20} />
+                                  </div>
+                                  <div>
+                                    <p className="font-black text-sm text-[#1A1A1A]">{cls.className}</p>
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                      {cls.departmentId?.code} — Yr {cls.year}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="font-black text-sm text-[#1A1A1A]">{cls.className}</p>
-                                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                    {cls.departmentId?.code} — Yr {cls.year}
-                                  </p>
-                                </div>
+                                <button 
+                                  onClick={() => toggleClass(cls._id)}
+                                  className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                >
+                                  <X size={16} />
+                                </button>
                               </div>
-                              <button 
-                                onClick={() => toggleClass(cls._id)}
-                                className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                              >
-                                <X size={16} />
-                              </button>
+                              
+                              {/* Subject Selection for this assignment */}
+                              <div className="relative">
+                                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 block ml-1 italic">Assigned Subject</label>
+                                <Dropdown
+                                  value={assignment.subject}
+                                  onChange={(val) => updateAssignmentSubject(cls._id, val)}
+                                  options={selectedTeacher?.teacherDetails?.subjects?.map(sub => ({
+                                    label: sub,
+                                    value: sub
+                                  })) || []}
+                                  placeholder="Select Subject"
+                                  className="w-full"
+                                  buttonClassName="!py-2 !text-xs !font-bold !bg-gray-50 !border-none !rounded-xl"
+                                />
+                              </div>
                             </div>
-                          </div>
-                        ))
+                          );
+                        })
                     )}
                   </div>
                 </div>
@@ -289,10 +337,10 @@ const AdminAssignTeacher = () => {
                     <div className="w-2 h-2 rounded-full bg-gray-300 mr-2"></div>
                     Available Classes
                   </h4>
-                  <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 pb-40 custom-scrollbar">
                     {(() => {
                       const filtered = classes.filter(cls => {
-                        const isNotAssigned = !selectedClasses.includes(cls._id);
+                        const isNotAssigned = !selectedAssignments.some(a => a.classId === cls._id);
                         const matchesSearch = cls.className.toLowerCase().includes(debouncedClassSearch.toLowerCase());
                         const matchesDept = !filters.department || cls.departmentId?.code === filters.department;
                         const matchesYear = !filters.year || String(cls.year) === filters.year;
@@ -339,7 +387,7 @@ const AdminAssignTeacher = () => {
                 <button
                   onClick={() => {
                     setSelectedTeacher(null);
-                    setSelectedClasses([]);
+                    setSelectedAssignments([]);
                   }}
                   className="px-8 py-4 bg-gray-50 text-gray-500 rounded-xl hover:bg-gray-100 transition-all font-bold active:scale-95 text-sm"
                 >

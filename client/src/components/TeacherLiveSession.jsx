@@ -18,6 +18,21 @@ const TeacherLiveSession = ({ teacher, preSelectedClassId, preSelectedSubject })
     if (preSelectedClassId) setSelectedClass(preSelectedClassId);
     if (preSelectedSubject) setSubject(preSelectedSubject);
   }, [preSelectedClassId, preSelectedSubject]);
+
+  // Smart UX: Auto-select subject when class is chosen based on assignments
+  useEffect(() => {
+    // Only auto-select if we're not in an active session and a class is newly selected
+    if (!selectedClass || activeSession) return;
+    
+    const assignedSubjects = teacher?.classAssignments
+      ?.filter(a => (a.classId?._id || a.classId).toString() === selectedClass.toString())
+      ?.map(a => a.subject) || [];
+
+    if (assignedSubjects.length > 0) {
+      // Auto-select the first assigned subject for this class
+      setSubject(assignedSubjects[0]);
+    }
+  }, [selectedClass, teacher, activeSession]);
   const jitsiContainerRef = useRef(null);
   const jitsiApiRef = useRef(null);
   const isEndingRef = useRef(false);
@@ -247,10 +262,14 @@ const TeacherLiveSession = ({ teacher, preSelectedClassId, preSelectedSubject })
                           <Dropdown
                             value={subject}
                             onChange={setSubject}
-                            options={teacher?.teacherDetails?.subjects?.map(sub => ({
-                              label: sub,
-                              value: sub
-                            })) || []}
+                            options={(() => {
+                              if (!selectedClass) return teacher?.teacherDetails?.subjects?.map(sub => ({ label: sub, value: sub })) || [];
+                              const assigned = teacher?.classAssignments
+                                ?.filter(a => (a.classId?._id || a.classId).toString() === selectedClass.toString())
+                                ?.map(a => a.subject) || [];
+                              const displaySubjects = assigned.length > 0 ? assigned : (teacher?.teacherDetails?.subjects || []);
+                              return displaySubjects.map(sub => ({ label: sub, value: sub }));
+                            })()}
                             placeholder="-- Choose Subject --"
                             className="w-full"
                             buttonClassName="!rounded-2xl !py-5 !bg-gray-50 !border-none !text-lg !font-black !tracking-tight !text-[#1A1A1A] !uppercase"

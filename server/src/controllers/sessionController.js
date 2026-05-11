@@ -42,7 +42,22 @@ const startSession = asyncHandler(async (req, res) => {
       return res.status(400).json({ success: false, message: 'Subject selection is required' });
     }
 
-    if (!user.teacherDetails?.subjects?.includes(subject)) {
+    // Check if there is a specific assignment for this class-subject pair
+    const hasAssignment = user.classAssignments?.some(
+      a => a.classId.toString() === classId.toString() && a.subject === subject
+    );
+
+    // If there are assignments, enforce them. Otherwise fall back to global subjects for backward compatibility.
+    const isGloballyAllowed = user.teacherDetails?.subjects?.includes(subject);
+
+    if (user.classAssignments && user.classAssignments.length > 0) {
+      if (!hasAssignment) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `You are not assigned to teach ${subject} for this class` 
+        });
+      }
+    } else if (!isGloballyAllowed) {
       return res.status(400).json({ success: false, message: 'Invalid subject selection for this faculty' });
     }
 
