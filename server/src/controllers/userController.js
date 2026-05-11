@@ -31,8 +31,30 @@ const getMe = asyncHandler(async (req, res) => {
     const userData = user.toObject();
 
     if (user.role === 'teacher') {
-      const sessionCount = await Session.countDocuments({ teacherId: user._id });
+      const sessions = await Session.find({ teacherId: user._id, status: 'ENDED' });
+      const sessionCount = sessions.length;
       userData.totalSessions = sessionCount;
+
+      if (sessionCount > 0) {
+        let totalPresent = 0;
+        let totalExpected = 0;
+        const classCountCache = {};
+
+        for (const session of sessions) {
+          const cid = session.classId.toString();
+          if (!classCountCache[cid]) {
+            classCountCache[cid] = await User.countDocuments({ role: 'student', classId: session.classId });
+          }
+          totalPresent += session.attendanceCount || 0;
+          totalExpected += classCountCache[cid] || 0;
+        }
+
+        userData.averageAttendance = totalExpected > 0 
+          ? parseFloat(((totalPresent / totalExpected) * 100).toFixed(1)) 
+          : 0;
+      } else {
+        userData.averageAttendance = 0;
+      }
     }
 
     res.status(200).json({ success: true, data: userData });

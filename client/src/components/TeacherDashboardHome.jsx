@@ -1,10 +1,23 @@
 import { BookOpen, Video, Users, ArrowRight, TrendingUp, Zap, LayoutDashboard } from 'lucide-react';
 
 const TeacherDashboardHome = ({ teacher, setActiveTab }) => {
+  const getAttendanceColor = (pct) => {
+    if (pct >= 75) return 'emerald';
+    if (pct >= 50) return 'amber';
+    return 'red';
+  };
+
+  const attendanceValue = teacher?.averageAttendance || 0;
+
   const stats = [
     { label: 'Assigned Classes', value: teacher?.assignedClasses?.length || 0, icon: BookOpen, color: 'blue' },
     { label: 'Total Sessions', value: teacher?.totalSessions || 0, icon: Video, color: 'emerald' },
-    { label: 'Total Attendance', value: 0, icon: Users, color: 'purple' }
+    { 
+      label: 'Average Attendance', 
+      value: `${attendanceValue}%`, 
+      icon: Users, 
+      color: getAttendanceColor(attendanceValue) 
+    }
   ];
 
   return (
