@@ -63,18 +63,18 @@ Integrates **Jitsi Meet API** for secure, high-fidelity video conferencing direc
 
 | Login Interface | Teacher Dashboard |
 | :---: | :---: |
-| ![Login Page Placeholder](https://via.placeholder.com/400x225?text=Login+Interface) | ![Teacher Dashboard Placeholder](https://via.placeholder.com/400x225?text=Teacher+Dashboard) |
+| ![Login Interface](./README-assets/login.png) | ![Teacher Dashboard](./README-assets/teacher-dashboard.png) |
 
-| Live Session Hub | Attendance Analytics |
+| Live Session Hub | Attendance Reports |
 | :---: | :---: |
-| ![Live Session Placeholder](https://via.placeholder.com/400x225?text=Live+Session+Interface) | ![Analytics Placeholder](https://via.placeholder.com/400x225?text=Attendance+Analytics) |
+| ![Live Session](./README-assets/live-session.png) | ![Reports](./README-assets/report.png) |
 
 ---
 
 ## 🏁 Deployment
 
 - **Frontend**: [https://sece-smartclass.vercel.app](https://sece-smartclass.vercel.app)
-- **Backend API**: [https://sece-smartclass-api.example.com](https://sece-smartclass-api.example.com) *(Update with actual backend URL)*
+- **Backend API**: [https://sece-smartclass.onrender.com](https://sece-smartclass-api.example.com)
 
 ---
 
