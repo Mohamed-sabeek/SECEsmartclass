@@ -97,7 +97,7 @@ const StudentJoinSession = () => {
 
         api.addEventListeners({
           videoConferenceJoined: handleJoined,
-          videoConferenceLeft: handleLeft
+          videoConferenceLeft: () => handleLeft(false) // Triggered by refresh/hangup - do NOT call backend leave
         });
 
         console.log("✅ Jitsi initialized successfully");
@@ -143,7 +143,16 @@ const StudentJoinSession = () => {
       const response = await axios.get('/api/sessions/active', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setActiveSession(response.data.data);
+      const session = response.data.data;
+      setActiveSession(session);
+      
+      // Auto-reconnect if session was active before refresh
+      if (session && localStorage.getItem('student_session_active') === 'true' && !meetingStarted) {
+        console.log("🔄 Auto-reconnecting to active session...");
+        handleJoin(session);
+      } else if (!session) {
+        localStorage.removeItem('student_session_active');
+      }
     } catch (error) {
       console.error('Error fetching active session:', error);
     } finally {
@@ -151,8 +160,9 @@ const StudentJoinSession = () => {
     }
   };
 
-  const handleJoin = async () => {
-    if (!activeSession) return;
+  const handleJoin = async (providedSession = null) => {
+    const sessionToJoin = providedSession || activeSession;
+    if (!sessionToJoin) return;
 
     try {
       setJoining(true);
@@ -160,13 +170,14 @@ const StudentJoinSession = () => {
       
       // Fetch Secure Meeting Access Token
       const response = await axios.post('/api/sessions/token',
-        { sessionId: activeSession._id },
+        { sessionId: sessionToJoin._id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       setJitsiData(response.data.data);
       setMeetingStarted(true);
       setMeetingLoading(true);
+      localStorage.setItem('student_session_active', 'true');
       toast.success('Secure Channel Synchronized!');
       
     } catch (error) {
@@ -197,8 +208,10 @@ const StudentJoinSession = () => {
     }, 3000);
   };
 
-  const handleLeft = async () => {
-    console.log("🚪 Student left meeting");
+  const handleLeft = async (isExplicit = true) => {
+    console.log(`🚪 Student left meeting (isExplicit: ${isExplicit})`);
+    
+    // Always clear local UI state
     setMeetingStarted(false);
     setMeetingLoading(false);
     hasConfirmedJoin.current = false;
@@ -208,16 +221,20 @@ const StudentJoinSession = () => {
       jitsiApiRef.current = null;
     }
     setJitsiData(null);
-    
-    try {
-      const token = localStorage.getItem('token');
-      await axios.post(`/api/sessions/${activeSession._id}/leave`, 
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      toast.success('Session recorded successfully');
-    } catch (error) {
-      console.error('Error recording leave time:', error);
+
+    // ONLY call backend leave and clear storage if explicitly clicked "Exit" or Jitsi hangup
+    if (isExplicit) {
+      localStorage.removeItem('student_session_active');
+      try {
+        const token = localStorage.getItem('token');
+        await axios.post(`/api/sessions/${activeSession._id}/leave`, 
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        toast.success('Session recorded successfully');
+      } catch (error) {
+        console.error('Error recording leave time:', error);
+      }
     }
     
     // Refresh session data
@@ -255,7 +272,7 @@ const StudentJoinSession = () => {
                 {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
              </div>
              <button 
-               onClick={handleLeft}
+               onClick={() => handleLeft(true)}
                className="px-6 py-3 bg-red-50 text-red-600 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-sm flex items-center hover:bg-red-600 hover:text-white transition-all"
              >
                 <X size={14} className="mr-2" />
@@ -271,7 +288,11 @@ const StudentJoinSession = () => {
                 <Zap className="text-[#FFD700] animate-bounce mb-4" size={48} />
                 <div className="absolute -inset-4 bg-[#FFD700]/20 rounded-full animate-ping"></div>
               </div>
-              <p className="text-sm font-black text-[#1A1A1A] uppercase tracking-[0.3em] italic">Syncing with Faculty Broadcast...</p>
+              <p className="text-sm font-black text-[#1A1A1A] uppercase tracking-[0.3em] italic">
+                {localStorage.getItem('student_session_active') === 'true' 
+                  ? "Reconnecting to live classroom..." 
+                  : "Syncing with Faculty Broadcast..."}
+              </p>
               <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-widest">Securing End-to-End Tunnel</p>
             </div>
           )}
@@ -328,7 +349,7 @@ const StudentJoinSession = () => {
 
                   <div className="md:w-72 w-full">
                      <button 
-                        onClick={handleJoin}
+                        onClick={() => handleJoin()}
                         disabled={joining}
                         className="w-full aspect-square bg-[#1A1A1A] text-[#FFD700] rounded-[2.5rem] flex flex-col items-center justify-center group hover:bg-[#FFD700] hover:text-[#1A1A1A] transition-all duration-500 shadow-2xl shadow-gray-900/20 active:scale-95"
                      >

@@ -54,6 +54,10 @@ const TeacherLiveSession = ({ teacher, preSelectedClassId, preSelectedSubject })
       if (session) {
         setSubject(session.subject || '');
         setSelectedClass(session.classId?._id || '');
+        // Persist session active state
+        localStorage.setItem('teacher_session_active', 'true');
+      } else {
+        localStorage.removeItem('teacher_session_active');
       }
     } catch (error) {
       console.error('Error fetching active session:', error);
@@ -108,7 +112,14 @@ const TeacherLiveSession = ({ teacher, preSelectedClassId, preSelectedSubject })
   };
 
   const handleConferenceLeft = () => {
-    handleEndClass(true);
+    // DO NOT end session automatically on refresh or Jitsi hangup
+    // Only set local state if needed, but keep session alive in DB
+    console.log("ℹ️ Teacher left Jitsi meeting container");
+    setJitsiData(null);
+    if (jitsiApiRef.current) {
+      jitsiApiRef.current.dispose();
+      jitsiApiRef.current = null;
+    }
   };
 
   const handleStartClass = async () => {
@@ -129,6 +140,7 @@ const TeacherLiveSession = ({ teacher, preSelectedClassId, preSelectedSubject })
       );
       
       setActiveSession(response.data.data);
+      localStorage.setItem('teacher_session_active', 'true');
       toast.success('Live Session Started! Notifications sent to students.');
     } catch (error) {
       console.error('Error starting class:', error);
@@ -161,6 +173,7 @@ const TeacherLiveSession = ({ teacher, preSelectedClassId, preSelectedSubject })
       const sessionId = activeSession._id;
       setActiveSession(null);
       setJitsiData(null);
+      localStorage.removeItem('teacher_session_active');
       if (jitsiApiRef.current) {
         jitsiApiRef.current.dispose();
         jitsiApiRef.current = null;
@@ -309,7 +322,11 @@ const TeacherLiveSession = ({ teacher, preSelectedClassId, preSelectedSubject })
                 {!jitsiData && (
                   <div className="h-full flex flex-col items-center justify-center space-y-4">
                      <Loader2 className="animate-spin text-[#FFD700]" size={40} />
-                     <p className="text-[10px] font-black text-white uppercase tracking-[0.2em] italic">Securing meeting perimeter...</p>
+                     <p className="text-[10px] font-black text-white uppercase tracking-[0.2em] italic">
+                       {localStorage.getItem('teacher_session_active') === 'true' 
+                         ? "Reconnecting to live classroom..." 
+                         : "Securing meeting perimeter..."}
+                     </p>
                   </div>
                 )}
               </div>
