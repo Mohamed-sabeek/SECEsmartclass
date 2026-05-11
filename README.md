@@ -121,6 +121,4 @@ cd client && npm run dev
 Developed by Mohamed Sabeek H  
 SECE SmartClass Project — 2026
 
----
-
 © 2026 SECE SmartClass. Dedicated to excellence in digital academic infrastructure.
