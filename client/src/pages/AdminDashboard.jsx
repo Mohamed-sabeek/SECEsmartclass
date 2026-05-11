@@ -10,6 +10,8 @@ import AdminAssignTeacher from '../components/AdminAssignTeacher';
 import { LayoutGrid, ClipboardCheck } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import Logo from '../assets/favicon.png';
+
 const AdminDashboard = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -64,8 +66,8 @@ const AdminDashboard = () => {
               {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
             <div className="flex items-center group cursor-pointer">
-              <div className="w-10 h-10 bg-gradient-to-tr from-[#FFD700] to-[#FFED4E] rounded-xl flex items-center justify-center mr-3 shadow-lg shadow-yellow-800/10 group-hover:rotate-12 transition-transform duration-500">
-                <LayoutDashboard className="text-[#1A1A1A]" size={22} />
+              <div className="w-10 h-10 bg-[#1A1A1A] rounded-xl flex items-center justify-center mr-3 shadow-[0_0_15px_rgba(255,215,0,0.15)] group-hover:rotate-12 transition-transform duration-500 overflow-hidden border border-white/5">
+                <img src={Logo} alt="SECE" className="w-full h-full object-contain p-1.5 filter drop-shadow-[0_0_3px_rgba(255,215,0,0.4)]" />
               </div>
               <h1 className="text-2xl font-black tracking-tight">
                 SECE <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#FFD700] to-[#FFED4E] font-black">SmartClass</span>

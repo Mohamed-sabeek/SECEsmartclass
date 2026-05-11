@@ -61,10 +61,6 @@ const startSession = asyncHandler(async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid subject selection for this faculty' });
     }
 
-    console.log("🔥 START SESSION API HIT");
-    console.log("Batch ID from request:", classId);
-    console.log("Subject:", subject);
-
     const session = await Session.create({
       teacherId: req.user.id,
       classId,
@@ -75,22 +71,15 @@ const startSession = asyncHandler(async (req, res) => {
       meetingLink
     });
 
-    console.log("✅ Session Created:", session._id);
-
     // Send email notifications to students (Async/Non-blocking)
     const sendNotifications = async () => {
       try {
-        console.log("🔍 Fetching students for batch:", classId);
         const students = await User.find({ 
           role: 'student', 
           classId: classId 
         }).select('email name');
 
-        console.log("📊 Students found in database:", students.length);
-        students.forEach(s => console.log(`📧 Student queue: ${s.email}`));
-
         if (students.length === 0) {
-          console.log("⚠️ No students found for this batch. Skipping emails.");
           return;
         }
 
@@ -101,11 +90,6 @@ const startSession = asyncHandler(async (req, res) => {
             // If DEMO_EMAIL is set, ALL emails are forced to that address to avoid "unverified domain" errors.
             const recipient = process.env.DEMO_EMAIL || student.email;
             
-            console.log("-----------------------------------------");
-            console.log(`📧 Notification Task for: ${student.name}`);
-            console.log(`📧 Original Target: ${student.email}`);
-            console.log(`📧 Final Recipient (Sandbox Override): ${recipient}`);
-
             return sendEmail({
               to: recipient,
               subject: `LIVE Class Started: ${subject}`,
@@ -120,18 +104,12 @@ const startSession = asyncHandler(async (req, res) => {
                 }),
                 joinUrl: `${process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173'}/student/live`
               })
-            }).then(() => {
-              console.log("🌐 URL Configuration:");
-              console.log(`🔗 FRONTEND_URL: ${process.env.FRONTEND_URL || 'Not Set'}`);
-              console.log(`🔗 Final Join Link: ${process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173'}/student/live`);
-              console.log(`✅ Success: Notification for ${student.name} dispatched to ${recipient}`);
             }).catch(err => {
               console.error(`❌ Failure: Could not send to ${recipient}:`, err.message);
             });
           });
 
         await Promise.all(emailTasks);
-        console.log(`🏁 Notification sequence complete for session ${session._id}`);
       } catch (err) {
         console.error('🔴 Critical Email notification error:', err.message);
       }
@@ -377,8 +355,6 @@ const joinSession = asyncHandler(async (req, res) => {
       return res.status(404).json({ success: false, message: 'Active LIVE session not found' });
     }
 
-    console.log(`🔥 JOIN API HIT: Student ${studentId} for Session ${session._id}`);
-
     // 4. Update session tracking (multi-log support)
     const studentEntryIdx = session.students.findIndex(s => s.studentId.toString() === studentId.toString());
 
@@ -392,7 +368,6 @@ const joinSession = asyncHandler(async (req, res) => {
       // Re-joining: Check if there's an already active log
       const activeLog = session.students[studentEntryIdx].logs.find(l => !l.leaveTime);
       if (activeLog) {
-        console.log(`⚠️ Duplicate join blocked for student ${studentId}`);
         return res.status(200).json({ success: true, message: 'Already joined' });
       }
       session.students[studentEntryIdx].logs.push({ joinTime: new Date() });
@@ -430,11 +405,6 @@ const getJitsiToken = asyncHandler(async (req, res) => {
     const fullRoom = `${appId}/${roomName}`;
     const kid = `${appId}/${apiKeyId}`;
 
-    console.log("JITSI ACTUAL - ROOM:", fullRoom);
-    console.log("JITSI ACTUAL - APP_ID:", appId);
-    console.log("JITSI ACTUAL - KEY_ID:", apiKeyId);
-    console.log("JITSI ACTUAL - KID:", kid);
-
     const privateKeyRaw = process.env.JITSI_PRIVATE_KEY || '';
     const privateKey = privateKeyRaw.startsWith('"') && privateKeyRaw.endsWith('"') 
       ? privateKeyRaw.slice(1, -1).replace(/\\n/g, '\n')
@@ -443,9 +413,6 @@ const getJitsiToken = asyncHandler(async (req, res) => {
     if (!privateKey) {
       console.error("CRITICAL: JITSI_PRIVATE_KEY is missing from environment!");
     }
-
-    console.log("JITSI FINAL - ISS: chat");
-    console.log("JITSI FINAL - SUB:", appId);
 
     // Token configuration for JaaS (8x8.vc) standard
     const token = jwt.sign(
@@ -496,8 +463,6 @@ const leaveSession = asyncHandler(async (req, res) => {
     const session = await Session.findById(req.params.id);
     if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
 
-    console.log(`🚪 LEAVE API HIT: Student ${req.user.id} for Session ${req.params.id}`);
-
     // Find student in session
     const studentEntry = session.students.find(s => s.studentId.toString() === req.user.id.toString());
     
@@ -510,7 +475,6 @@ const leaveSession = asyncHandler(async (req, res) => {
 
         // PART 2: MINIMUM DURATION FILTER (15 Seconds)
         if (duration < 15000) {
-          console.log(`🗑️ Ignored fake attendance: Duration ${duration}ms too short (under 15s) for student ${req.user.id}`);
           studentEntry.logs.pop(); // Remove the micro-log
           await session.save();
           return res.status(200).json({ success: true, message: 'Micro-session ignored' });

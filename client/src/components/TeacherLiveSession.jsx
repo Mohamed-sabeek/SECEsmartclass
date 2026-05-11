@@ -129,7 +129,6 @@ const TeacherLiveSession = ({ teacher, preSelectedClassId, preSelectedSubject })
   const handleConferenceLeft = () => {
     // DO NOT end session automatically on refresh or Jitsi hangup
     // Only set local state if needed, but keep session alive in DB
-    console.log("ℹ️ Teacher left Jitsi meeting container");
     setJitsiData(null);
     if (jitsiApiRef.current) {
       jitsiApiRef.current.dispose();
@@ -168,8 +167,6 @@ const TeacherLiveSession = ({ teacher, preSelectedClassId, preSelectedSubject })
   const handleEndClass = async (fromJitsi = false) => {
     if (!activeSession || isEndingRef.current) return;
     
-    console.log(`🔥 End session triggered (fromJitsi: ${fromJitsi})`);
-
     try {
       isEndingRef.current = true;
       setIsProcessing(true);

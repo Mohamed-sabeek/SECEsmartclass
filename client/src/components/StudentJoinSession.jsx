@@ -53,8 +53,6 @@ const StudentJoinSession = () => {
     if (!meetingStarted || !jitsiData) return;
 
     const initializeMeeting = () => {
-      console.log("🚀 Initializing Student Jitsi");
-
       if (!window.JitsiMeetExternalAPI) {
         console.error("❌ Jitsi API missing");
         setMeetingLoading(false);
@@ -96,12 +94,8 @@ const StudentJoinSession = () => {
         setMeetingLoading(false);
 
         api.addEventListeners({
-          videoConferenceJoined: handleJoined,
           videoConferenceLeft: () => handleLeft(false) // Triggered by refresh/hangup - do NOT call backend leave
         });
-
-        console.log("✅ Jitsi initialized successfully");
-
       } catch (error) {
         console.error("❌ Jitsi initialization failed", error);
         setMeetingLoading(false);
@@ -119,7 +113,6 @@ const StudentJoinSession = () => {
     const handleVisibilityChange = async () => {
       // ONLY trigger when tab becomes hidden AND meeting is active
       if (document.visibilityState === 'hidden' && meetingStarted && activeSession && hasConfirmedJoin.current) {
-        console.log("🕵️ Student switched tab - Logging engagement");
         try {
           const token = localStorage.getItem('token');
           await axios.post('/api/engagement/tab-switch', 
@@ -148,7 +141,6 @@ const StudentJoinSession = () => {
       
       // Auto-reconnect if session was active before refresh
       if (session && localStorage.getItem('student_session_active') === 'true' && !meetingStarted) {
-        console.log("🔄 Auto-reconnecting to active session...");
         handleJoin(session);
       } else if (!session) {
         localStorage.removeItem('student_session_active');
@@ -189,8 +181,6 @@ const StudentJoinSession = () => {
   };
 
   const handleJoined = async () => {
-    console.log("✅ Student actually joined meeting");
-    
     if (hasConfirmedJoin.current) return;
     hasConfirmedJoin.current = true;
     
@@ -209,8 +199,6 @@ const StudentJoinSession = () => {
   };
 
   const handleLeft = async (isExplicit = true) => {
-    console.log(`🚪 Student left meeting (isExplicit: ${isExplicit})`);
-    
     // Always clear local UI state
     setMeetingStarted(false);
     setMeetingLoading(false);

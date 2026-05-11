@@ -24,7 +24,6 @@ const sendEmail = async ({ to, subject, html }) => {
       return null;
     }
 
-    console.log("✅ Email sent via Resend:", data.id);
     return data;
   } catch (error) {
     console.error("❌ Resend Dispatch Failed:", error.message);

@@ -30,6 +30,8 @@ import TeacherProfile from './teacher/TeacherProfile';
 import { useParams, useNavigate } from 'react-router-dom';
 import PasswordWarningBanner from '../components/PasswordWarningBanner';
 
+import Logo from '../assets/favicon.png';
+
 const TeacherDashboard = () => {
   const { logout, user } = useAuth();
   const { tab, classId, sessionId } = useParams();
@@ -80,8 +82,6 @@ const TeacherDashboard = () => {
       const response = await axios.get('/api/users/me', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      console.log("Teacher Profile Data:", response.data.data);
-      console.log("Assigned Classes:", response.data.data.assignedClasses);
       setTeacherData(response.data.data);
     } catch (error) {
       console.error('Error fetching teacher data:', error);
@@ -144,8 +144,8 @@ const TeacherDashboard = () => {
       >
         <div className="p-8 border-b border-gray-50 bg-gray-50/20">
           <div className="flex items-center mb-0">
-            <div className="w-12 h-12 bg-gradient-to-br from-[#FFD700] to-[#FFB700] rounded-2xl flex items-center justify-center shadow-lg shadow-yellow-500/20 rotate-3">
-              <span className="text-white text-2xl font-black">S</span>
+            <div className="w-12 h-12 bg-[#1A1A1A] rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(255,215,0,0.2)] rotate-3 overflow-hidden border border-white/5">
+              <img src={Logo} alt="SECE" className="w-full h-full object-contain p-2 filter drop-shadow-[0_0_5px_rgba(255,215,0,0.5)]" />
             </div>
             <div className="ml-4">
               <h1 className="text-xl font-black text-[#1A1A1A] tracking-tighter leading-none">

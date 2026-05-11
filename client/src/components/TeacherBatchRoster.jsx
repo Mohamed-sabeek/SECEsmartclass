@@ -30,17 +30,13 @@ const TeacherBatchRoster = () => {
       setLoading(true);
       const token = localStorage.getItem('token');
       
-      console.log(`Fetching roster for class: ${classId}`);
-      
       // 1. Fetch Students using the new RESTful teacher-specific endpoint
       const studentRes = await axios.get(`/api/teacher/class/${classId}/students`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      console.log("Students API Response:", studentRes.data);
       const studentList = studentRes.data.data || [];
       setStudents(studentList);
-      console.log("Students Loaded into State:", studentList);
 
       // 2. Fetch Class Info (from the first student if available)
       if (studentList.length > 0 && studentList[0].classId) {

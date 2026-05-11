@@ -450,12 +450,12 @@ const uploadProfileImage = asyncHandler(async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     if (!user) {
-      console.log('UPLOAD ERROR: User not found in DB');
+      console.error('UPLOAD ERROR: User not found in DB');
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
     if (!req.file) {
-      console.log('UPLOAD ERROR: No file in request');
+      console.error('UPLOAD ERROR: No file in request');
       return res.status(400).json({ success: false, message: "No file uploaded" });
     }
 
