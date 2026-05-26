@@ -52,6 +52,7 @@ export default function Dropdown({
                 <Menu.Item key={`${val}-${idx}`}>
                   {({ active }) => (
                     <button
+                      type="button"
                       onClick={() => onChange(val)}
                       className={`w-full flex items-center justify-between px-6 py-3 text-[10px] font-black uppercase tracking-[0.1em] transition-colors ${
                         active ? "bg-yellow-50 text-[#1A1A1A]" : "text-gray-500"
