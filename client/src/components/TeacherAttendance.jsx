@@ -3,12 +3,19 @@ import { ClipboardCheck, Search, Filter, Users, CheckCircle, XCircle, Loader2, I
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import Dropdown from './ui/Dropdown';
+import Pagination from './common/Pagination';
 
 const TeacherAttendance = ({ teacher }) => {
   const [attendanceData, setAttendanceData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedClass, setSelectedClass] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedClass]);
 
   useEffect(() => {
     fetchAttendance();
@@ -35,6 +42,9 @@ const TeacherAttendance = ({ teacher }) => {
     student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     student.rollNumber.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage) || 1;
+  const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const stats = {
     totalStudents: attendanceData.length,
@@ -168,7 +178,7 @@ const TeacherAttendance = ({ teacher }) => {
                   </td>
                 </tr>
               ) : (
-                filteredData.map((data) => (
+                paginatedData.map((data) => (
                   <tr key={data.studentId} className="group hover:bg-yellow-50/20 transition-all duration-300">
                     <td className="px-10 py-6">
                       <div className="flex items-center">
@@ -222,6 +232,16 @@ const TeacherAttendance = ({ teacher }) => {
             </tbody>
           </table>
         </div>
+        
+        {filteredData.length > 0 && (
+          <div className="py-4 bg-white border-t border-gray-100">
+            <Pagination 
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

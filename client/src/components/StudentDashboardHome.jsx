@@ -7,7 +7,8 @@ import {
   GraduationCap, 
   Radio, 
   Video, 
-  ArrowRight
+  ArrowRight,
+  Calendar
 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -19,11 +20,13 @@ const StudentDashboardHome = ({ user }) => {
     percentage: 0
   });
   const [activeSession, setActiveSession] = useState(null);
+  const [scheduledSessions, setScheduledSessions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchStats();
     fetchActiveSession();
+    fetchScheduledSessions();
     
     // Set up polling for active sessions
     const interval = setInterval(fetchActiveSession, 10000);
@@ -54,6 +57,23 @@ const StudentDashboardHome = ({ user }) => {
     } catch (error) {
       console.error('Error fetching active session:', error);
     }
+  };
+
+  const fetchScheduledSessions = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('/api/sessions/scheduled', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setScheduledSessions(response.data.data);
+    } catch (error) {
+      console.error('Error fetching scheduled sessions:', error);
+    }
+  };
+
+  const handleJoinScheduledClass = () => {
+    const event = new CustomEvent('switchTab', { detail: 'join' });
+    window.dispatchEvent(event);
   };
 
   const handleAutoJoin = () => {
@@ -189,6 +209,81 @@ const StudentDashboardHome = ({ user }) => {
             )}
          </div>
       </div>
+
+      {/* Upcoming Scheduled Sessions */}
+      {scheduledSessions && scheduledSessions.length > 0 ? (
+        <div className="mt-8 bg-white rounded-[2.5rem] p-10 shadow-xl border border-gray-100 relative overflow-hidden">
+          <div className="flex items-center space-x-4 mb-8">
+            <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center">
+               <Calendar className="text-[#FFD700]" size={24} />
+            </div>
+            <div>
+               <h3 className="text-xl font-black text-[#1A1A1A] tracking-tight uppercase">Upcoming Scheduled Classes</h3>
+               <p className="text-gray-500 text-xs font-medium italic">Classes planned by your faculty</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+             {scheduledSessions.map((session, idx) => {
+                const formatTime12h = (time24) => {
+                  const [hourStr, minute] = time24.split(':');
+                  let hour = parseInt(hourStr, 10);
+                  const ampm = hour >= 12 ? 'PM' : 'AM';
+                  hour = hour % 12 || 12;
+                  return `${hour}:${minute} ${ampm}`;
+                };
+                const isToday = new Date(session.scheduledDate).toDateString() === new Date().toDateString();
+                const [hours, minutes] = session.startTime.split(':');
+                const sessionStartTime = new Date(session.scheduledDate);
+                sessionStartTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0);
+                const timeHasCome = isToday && new Date() >= new Date(sessionStartTime.getTime() - 15 * 60000);
+
+                return (
+                <div key={idx} className="bg-gray-50 rounded-3xl p-6 border border-gray-100 hover:border-[#FFD700]/30 transition-colors">
+                   <span className="inline-block px-3 py-1 bg-white rounded-lg text-[9px] font-black uppercase tracking-widest text-[#FFD700] mb-4 shadow-sm italic">
+                      {new Date(session.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                   </span>
+                   <h4 className="text-lg font-black text-[#1A1A1A] italic mb-1 uppercase leading-none">{session.subject}</h4>
+                   <p className="text-gray-500 text-xs font-bold mb-4">{session.teacher?.name}</p>
+                   
+                   <div className="flex items-center space-x-2 text-[#1A1A1A] bg-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest shadow-sm mb-4">
+                      <Clock size={14} className="text-gray-400" />
+                      <span>{formatTime12h(session.startTime)} - {formatTime12h(session.endTime)}</span>
+                   </div>
+                   
+                   {timeHasCome ? (
+                     <button 
+                       onClick={handleJoinScheduledClass}
+                       className="w-full mt-2 flex items-center justify-center bg-[#1A1A1A] hover:bg-[#FFD700] text-white hover:text-[#1A1A1A] py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-md active:scale-95"
+                     >
+                       <Radio size={14} className="mr-2" />
+                       Join Live Room
+                     </button>
+                   ) : (
+                     <button 
+                       disabled
+                       className="w-full mt-2 flex items-center justify-center bg-gray-200 text-gray-400 py-3 rounded-xl text-xs font-black uppercase tracking-widest cursor-not-allowed"
+                     >
+                       <Clock size={14} className="mr-2" />
+                       Starts at {formatTime12h(session.startTime)}
+                     </button>
+                   )}
+                </div>
+                )
+             })}
+          </div>
+        </div>
+      ) : (
+        <div className="mt-12 p-10 bg-white rounded-[2.5rem] border border-dashed border-gray-200 flex flex-col items-center justify-center space-y-4">
+            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center">
+               <Calendar className="text-gray-300" size={32} />
+            </div>
+            <div className="text-center">
+               <p className="text-gray-800 font-black text-lg">No Upcoming Scheduled Classes</p>
+               <p className="text-gray-500 text-sm max-w-sm mt-1">We will alert you when your faculty schedules an upcoming session.</p>
+            </div>
+        </div>
+      )}
     </div>
   );
 };

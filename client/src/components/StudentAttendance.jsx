@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import Dropdown from './ui/Dropdown';
+import Pagination from './common/Pagination';
 
 const StudentAttendance = () => {
   const [stats, setStats] = useState(null);
@@ -23,6 +24,13 @@ const StudentAttendance = () => {
 
   const [filterDate, setFilterDate] = useState('');
   const dateInputRef = useRef(null);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus, filterDate]);
 
   useEffect(() => {
     fetchAttendance();
@@ -76,6 +84,19 @@ const StudentAttendance = () => {
       </div>
     );
   }
+
+  const filteredHistory = history.filter(session => {
+    const d = new Date(session.startTime);
+    const sessionDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    
+    const matchStatus = filterStatus === 'All' || session.status === filterStatus;
+    const matchDate = !filterDate || sessionDate === filterDate;
+    
+    return matchStatus && matchDate;
+  });
+
+  const totalPages = Math.ceil(filteredHistory.length / itemsPerPage) || 1;
+  const paginatedHistory = filteredHistory.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="animate-in fade-in duration-700">
@@ -243,15 +264,7 @@ const StudentAttendance = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {history.filter(session => {
-                  const d = new Date(session.startTime);
-                  const sessionDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                  
-                  const matchStatus = filterStatus === 'All' || session.status === filterStatus;
-                  const matchDate = !filterDate || sessionDate === filterDate;
-                  
-                  return matchStatus && matchDate;
-                }).map((session) => (
+                {paginatedHistory.map((session) => (
                   <tr key={session._id} className="group hover:bg-yellow-50/20 transition-all duration-300">
                     <td className="px-10 py-6">
                       <div className="flex items-center">
@@ -305,6 +318,16 @@ const StudentAttendance = () => {
               </tbody>
             </table>
           </div>
+          
+          {filteredHistory.length > 0 && (
+            <div className="py-4 bg-white border-t border-gray-100">
+              <Pagination 
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

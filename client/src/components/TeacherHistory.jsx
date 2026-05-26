@@ -3,6 +3,7 @@ import { History, Calendar, Clock, Loader2, ArrowRight, X } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Dropdown from './ui/Dropdown';
+import Pagination from './common/Pagination';
 
 const TeacherHistory = ({ teacher }) => {
   const [history, setHistory] = useState([]);
@@ -13,10 +14,13 @@ const TeacherHistory = ({ teacher }) => {
     month: '',
     date: ''
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
   const dateInputRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
+    setCurrentPage(1);
     fetchHistory();
   }, [filters]);
 
@@ -73,6 +77,9 @@ const TeacherHistory = ({ teacher }) => {
   );
 
   const activeFilterCount = Object.values(filters).filter(v => v !== '').length;
+
+  const totalPages = Math.ceil(history.length / itemsPerPage) || 1;
+  const paginatedHistory = history.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="animate-in slide-in-from-bottom duration-700">
@@ -234,7 +241,7 @@ const TeacherHistory = ({ teacher }) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {history.map((session) => (
+                {paginatedHistory.map((session) => (
                   <tr key={session._id} className="group hover:bg-yellow-50/20 transition-all duration-300">
                     <td className="px-10 py-6">
                       <div className="flex items-center">
@@ -290,6 +297,16 @@ const TeacherHistory = ({ teacher }) => {
               </tbody>
             </table>
           </div>
+          
+          {history.length > 0 && (
+            <div className="py-4 bg-white border-t border-gray-100">
+              <Pagination 
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

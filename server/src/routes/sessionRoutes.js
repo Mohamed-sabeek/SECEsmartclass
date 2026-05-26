@@ -12,7 +12,10 @@ const {
   leaveSession,
   getSessionReport,
   exportSessionReportCSV,
-  exportSessionReportPDF
+  exportSessionReportPDF,
+  scheduleSession,
+  getUpcomingScheduledSessions,
+  deleteScheduledSession
 } = require('../controllers/sessionController');
 
 router.use(protect);
@@ -23,6 +26,9 @@ router.post('/token', getJitsiToken);
 router.post('/:id/leave', leaveSession);
 router.get('/active', getActiveSession);
 router.get('/history', getTeacherHistory);
+router.post('/schedule', scheduleSession);
+router.get('/scheduled', getUpcomingScheduledSessions);
+router.delete('/scheduled/:id', deleteScheduledSession);
 router.get('/report/:id', getSessionReport);
 router.get('/report/:id/export/csv', exportSessionReportCSV);
 router.get('/report/:id/export/pdf', exportSessionReportPDF);

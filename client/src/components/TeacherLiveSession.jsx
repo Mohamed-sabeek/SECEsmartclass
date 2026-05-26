@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Video, Zap, Clock, Users, Play, Square, Loader2, AlertCircle, BookOpen } from 'lucide-react';
+import { Video, Zap, Clock, Users, Play, Square, Loader2, AlertCircle, BookOpen, Calendar } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +13,14 @@ const TeacherLiveSession = ({ teacher, preSelectedClassId, preSelectedSubject })
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedClass, setSelectedClass] = useState(preSelectedClassId || '');
   const [subject, setSubject] = useState(preSelectedSubject || '');
+
+  // Schedule Session States
+  const [scheduleClass, setScheduleClass] = useState('');
+  const [scheduleSubject, setScheduleSubject] = useState('');
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [isScheduling, setIsScheduling] = useState(false);
 
   useEffect(() => {
     if (preSelectedClassId) setSelectedClass(preSelectedClassId);
@@ -164,6 +172,40 @@ const TeacherLiveSession = ({ teacher, preSelectedClassId, preSelectedSubject })
     }
   };
 
+  const handleScheduleSession = async () => {
+    if (!scheduleClass || !scheduleSubject || !scheduleDate || !startTime || !endTime) {
+      toast.error('Please fill all scheduling fields');
+      return;
+    }
+
+    try {
+      setIsScheduling(true);
+      const token = localStorage.getItem('token');
+      await axios.post('/api/sessions/schedule', 
+        { 
+          classId: scheduleClass,
+          subject: scheduleSubject,
+          scheduledDate: scheduleDate,
+          startTime,
+          endTime
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      toast.success('Session Scheduled! Notifications sent to students.');
+      setScheduleClass('');
+      setScheduleSubject('');
+      setScheduleDate('');
+      setStartTime('');
+      setEndTime('');
+    } catch (error) {
+      console.error('Error scheduling class:', error);
+      toast.error(error.response?.data?.message || 'Failed to schedule class');
+    } finally {
+      setIsScheduling(false);
+    }
+  };
+
   const handleEndClass = async (fromJitsi = false) => {
     if (!activeSession || isEndingRef.current) return;
     
@@ -226,7 +268,8 @@ const TeacherLiveSession = ({ teacher, preSelectedClassId, preSelectedSubject })
       </div>
 
       {!activeSession ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <div className="lg:col-span-12">
              <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 p-12 overflow-hidden relative group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-400/5 rounded-full -mr-20 -mt-20 group-hover:bg-yellow-400/10 transition-colors"></div>
@@ -288,10 +331,105 @@ const TeacherLiveSession = ({ teacher, preSelectedClassId, preSelectedSubject })
                          Start Broadcast Class
                       </button>
                    </div>
-                </div>
-             </div>
-          </div>
+                 </div>
+              </div>
+           </div>
         </div>
+
+        <div className="grid grid-cols-1 mt-10">
+           <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 p-12 overflow-hidden relative group">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFD700]/5 rounded-full -mr-20 -mt-20 transition-colors"></div>
+              
+              <div className="max-w-2xl relative z-10">
+                 <div className="w-16 h-16 bg-[#1A1A1A] rounded-2xl flex items-center justify-center mb-8 rotate-3">
+                    <Calendar className="text-[#FFD700]" size={32} />
+                 </div>
+                 <h3 className="text-4xl font-black text-[#1A1A1A] mb-4 tracking-tighter italic">Schedule Academic Session</h3>
+                 <p className="text-gray-500 text-lg mb-10 font-bold uppercase tracking-widest text-[10px]">Plan future classes and notify students automatically</p>
+                 
+                 <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="relative group">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block italic">Select Class</label>
+                        <Dropdown
+                          value={scheduleClass}
+                          onChange={setScheduleClass}
+                          options={teacher?.assignedClasses?.map(cls => ({
+                            label: `${cls.className} — Year ${cls.year} (${cls.section})`,
+                            value: cls._id
+                          })) || []}
+                          placeholder="-- Choose Class --"
+                          className="w-full"
+                          buttonClassName="!rounded-2xl !py-5 !bg-gray-50 !border-none !text-lg !font-black !tracking-tight !text-[#1A1A1A] !uppercase"
+                        />
+                      </div>
+                      <div className="relative group">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block italic">Select Subject</label>
+                        <Dropdown
+                          value={scheduleSubject}
+                          onChange={setScheduleSubject}
+                          options={(() => {
+                            if (!scheduleClass) return teacher?.teacherDetails?.subjects?.map(sub => ({ label: sub, value: sub })) || [];
+                            const assigned = teacher?.classAssignments
+                              ?.filter(a => (a.classId?._id || a.classId).toString() === scheduleClass.toString())
+                              ?.map(a => a.subject) || [];
+                            const displaySubjects = assigned.length > 0 ? assigned : (teacher?.teacherDetails?.subjects || []);
+                            return displaySubjects.map(sub => ({ label: sub, value: sub }));
+                          })()}
+                          placeholder="-- Choose Subject --"
+                          className="w-full"
+                          buttonClassName="!rounded-2xl !py-5 !bg-gray-50 !border-none !text-lg !font-black !tracking-tight !text-[#1A1A1A] !uppercase"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block italic">Select Date</label>
+                        <input 
+                          type="date"
+                          value={scheduleDate}
+                          onChange={(e) => setScheduleDate(e.target.value)}
+                          className="w-full rounded-2xl py-5 px-6 bg-gray-50 border-none text-lg font-black tracking-tight text-[#1A1A1A] uppercase focus:ring-2 focus:ring-[#FFD700] outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block italic">Start Time</label>
+                        <input 
+                          type="time"
+                          value={startTime}
+                          onChange={(e) => setStartTime(e.target.value)}
+                          className="w-full rounded-2xl py-5 px-6 bg-gray-50 border-none text-lg font-black tracking-tight text-[#1A1A1A] uppercase focus:ring-2 focus:ring-[#FFD700] outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block italic">End Time</label>
+                        <input 
+                          type="time"
+                          value={endTime}
+                          onChange={(e) => setEndTime(e.target.value)}
+                          className="w-full rounded-2xl py-5 px-6 bg-gray-50 border-none text-lg font-black tracking-tight text-[#1A1A1A] uppercase focus:ring-2 focus:ring-[#FFD700] outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={handleScheduleSession}
+                      disabled={isScheduling || !scheduleClass || !scheduleSubject || !scheduleDate || !startTime || !endTime}
+                      className="group relative w-full flex items-center justify-center bg-white border-2 border-gray-100 text-[#1A1A1A] hover:bg-gray-50 px-10 py-6 rounded-2xl font-black transition-all duration-300 shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-[0.2em] text-sm overflow-hidden mt-4"
+                    >
+                       {isScheduling ? (
+                         <Loader2 className="animate-spin mr-3" size={20} />
+                       ) : (
+                         <Calendar className="mr-3 text-[#FFD700]" size={20} />
+                       )}
+                       Schedule Session
+                    </button>
+                 </div>
+              </div>
+           </div>
+        </div>
+        </>
       ) : (
         <div className="space-y-8">
            {/* Active Session Display */}

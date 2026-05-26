@@ -21,7 +21,7 @@ function createApp() {
     "http://localhost:5173",
     process.env.CLIENT_URL,
     process.env.FRONTEND_URL,
-    "https://sece-smartclass.vercel.app"
+    "https://sec-esmartclass.vercel.app"
   ].filter(Boolean);
 
   app.use(

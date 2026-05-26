@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Users, ArrowLeft, Loader2, GraduationCap, Mail, Calendar } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import Pagination from './common/Pagination';
 
 const getYearLabel = (year) => {
   if (year === 1) return "1st Year";
@@ -18,6 +19,8 @@ const TeacherBatchRoster = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [classInfo, setClassInfo] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   useEffect(() => {
     if (classId) {
@@ -126,7 +129,7 @@ const TeacherBatchRoster = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {students.map((student) => (
+                {students.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((student) => (
                   <tr key={student._id} className="group hover:bg-yellow-50/20 transition-all duration-300">
                     <td className="px-10 py-6">
                       <div className="flex items-center">
@@ -164,6 +167,16 @@ const TeacherBatchRoster = () => {
               </tbody>
             </table>
           </div>
+          
+          {students.length > 0 && (
+            <div className="py-4 bg-white border-t border-gray-100">
+              <Pagination 
+                currentPage={currentPage}
+                totalPages={Math.ceil(students.length / itemsPerPage) || 1}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

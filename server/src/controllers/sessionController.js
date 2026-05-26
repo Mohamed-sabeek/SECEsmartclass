@@ -3,10 +3,11 @@ const User = require('../models/User');
 const mongoose = require('mongoose');
 const Attendance = require('../models/Attendance');
 const Engagement = require('../models/Engagement');
+const ScheduledSession = require('../models/ScheduledSession');
 const asyncHandler = require('../utils/asyncHandler');
 const jwt = require('jsonwebtoken');
 const { sendEmail } = require('../utils/sendEmail');
-const { sessionStartTemplate } = require('../utils/emailTemplates');
+const { sessionStartTemplate, sessionScheduledTemplate } = require('../utils/emailTemplates');
 
 // @desc Start a new class session
 // @route POST /api/sessions
@@ -83,12 +84,10 @@ const startSession = asyncHandler(async (req, res) => {
           return;
         }
 
-        const emailTasks = students
-          .filter(s => s.email)
-          .map(student => {
-            // CRITICAL: Resend Sandbox Mode Override
-            // If DEMO_EMAIL is set, ALL emails are forced to that address to avoid "unverified domain" errors.
-            const recipient = process.env.DEMO_EMAIL || student.email;
+        let recipients = students.map(s => process.env.DEMO_EMAIL || s.email).filter(Boolean);
+        recipients = [...new Set(recipients)];
+
+        const emailTasks = recipients.map(recipient => {
             
             return sendEmail({
               to: recipient,
@@ -826,6 +825,173 @@ const exportSessionReportPDF = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc Schedule a new session
+// @route POST /api/sessions/schedule
+// @access Private (Teacher)
+const scheduleSession = asyncHandler(async (req, res) => {
+  try {
+    const { classId, subject, scheduledDate, startTime, endTime } = req.body;
+
+    if (!classId || !subject || !scheduledDate || !startTime || !endTime) {
+      return res.status(400).json({ success: false, message: 'All fields are required' });
+    }
+
+    // Check for scheduling conflicts for the same class
+    const targetDate = new Date(scheduledDate);
+    
+    // Time overlap logic: newStartTime < existingEndTime AND newEndTime > existingStartTime
+    const conflictingSession = await ScheduledSession.findOne({
+      class: classId,
+      scheduledDate: targetDate,
+      $and: [
+        { startTime: { $lt: endTime } },
+        { endTime: { $gt: startTime } }
+      ]
+    });
+
+    if (conflictingSession) {
+      const formatTime12h = (time24) => {
+        const [hourStr, minute] = time24.split(':');
+        let hour = parseInt(hourStr, 10);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        hour = hour % 12 || 12;
+        return `${hour}:${minute} ${ampm}`;
+      };
+      
+      return res.status(400).json({ 
+        success: false, 
+        message: `Schedule Overlap: This batch is already booked for ${conflictingSession.subject} from ${formatTime12h(conflictingSession.startTime)} to ${formatTime12h(conflictingSession.endTime)}.` 
+      });
+    }
+
+    const scheduledSession = await ScheduledSession.create({
+      teacher: req.user.id,
+      class: classId,
+      subject,
+      scheduledDate: new Date(scheduledDate),
+      startTime,
+      endTime
+    });
+
+    const populatedSession = await ScheduledSession.findById(scheduledSession._id)
+      .populate('teacher', 'name')
+      .populate('class', 'className section');
+
+    // Send email notifications to students
+    const sendNotifications = async () => {
+      try {
+        const students = await User.find({ 
+          role: 'student', 
+          classId: classId 
+        }).select('email name');
+
+        if (students.length === 0) return;
+
+        const formatTime12h = (time24) => {
+          const [hourStr, minute] = time24.split(':');
+          let hour = parseInt(hourStr, 10);
+          const ampm = hour >= 12 ? 'PM' : 'AM';
+          hour = hour % 12 || 12;
+          return `${hour}:${minute} ${ampm}`;
+        };
+
+        let recipients = students.map(s => process.env.DEMO_EMAIL || s.email).filter(Boolean);
+        recipients = [...new Set(recipients)];
+
+        const emailTasks = recipients.map(recipient => {
+            
+            return sendEmail({
+              to: recipient,
+              subject: `Class Scheduled: ${subject}`,
+              html: sessionScheduledTemplate({
+                subject,
+                teacherName: populatedSession.teacher.name,
+                className: `${populatedSession.class.className} (${populatedSession.class.section})`,
+                scheduledDate: new Date(scheduledDate).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                }),
+                startTime: formatTime12h(startTime),
+                endTime: formatTime12h(endTime)
+              })
+            }).catch(err => {
+              console.error(`❌ Failure: Could not send to ${recipient}:`, err.message);
+            });
+          });
+
+        await Promise.all(emailTasks);
+      } catch (err) {
+        console.error('🔴 Critical Email notification error:', err.message);
+      }
+    };
+
+    sendNotifications();
+
+    res.status(201).json({ success: true, data: scheduledSession });
+  } catch (error) {
+    console.error('SCHEDULE SESSION ERROR:', error.message);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// @desc Get upcoming scheduled sessions
+// @route GET /api/sessions/scheduled
+// @access Private
+const getUpcomingScheduledSessions = asyncHandler(async (req, res) => {
+  try {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+
+    let query = {
+      status: 'SCHEDULED',
+      scheduledDate: { $gte: yesterday }
+    };
+
+    if (req.user.role === 'student') {
+      const user = await User.findById(req.user.id);
+      if (!user || !user.classId) {
+        return res.status(200).json({ success: true, data: [] });
+      }
+      query.class = user.classId;
+    } else if (req.user.role === 'teacher') {
+      query.teacher = req.user.id;
+    }
+
+    const sessions = await ScheduledSession.find(query)
+      .populate('teacher', 'name')
+      .populate('class', 'className section year')
+      .sort({ scheduledDate: 1, startTime: 1 });
+
+    res.status(200).json({ success: true, data: sessions });
+  } catch (error) {
+    console.error('GET SCHEDULED SESSIONS ERROR:', error.message);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// @desc Delete a scheduled session
+// @route DELETE /api/sessions/scheduled/:id
+// @access Private (Teacher)
+const deleteScheduledSession = asyncHandler(async (req, res) => {
+  try {
+    const session = await ScheduledSession.findById(req.params.id);
+    if (!session) {
+      return res.status(404).json({ success: false, message: 'Session not found' });
+    }
+    if (session.teacher.toString() !== req.user.id.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+    await ScheduledSession.findByIdAndDelete(req.params.id);
+    res.status(200).json({ success: true, message: 'Session cancelled' });
+  } catch (error) {
+    console.error('DELETE SCHEDULED SESSION ERROR:', error.message);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 module.exports = {
   startSession,
   endSession,
@@ -837,5 +1003,8 @@ module.exports = {
   leaveSession,
   getSessionReport,
   exportSessionReportCSV,
-  exportSessionReportPDF
+  exportSessionReportPDF,
+  scheduleSession,
+  getUpcomingScheduledSessions,
+  deleteScheduledSession
 };
