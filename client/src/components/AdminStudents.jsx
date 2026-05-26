@@ -470,7 +470,8 @@ const AdminStudents = () => {
                     type="number"
                     name="admissionYear"
                     value={formData.admissionYear}
-                  className="w-full px-6 py-4 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD700] focus:border-[#FFD700] transition-all font-bold text-lg"
+                    onChange={handleChange}
+                    className="w-full px-6 py-4 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD700] focus:border-[#FFD700] transition-all font-bold text-lg"
                     placeholder="e.g. 2024"
                     required
                   />
