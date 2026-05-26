@@ -109,7 +109,7 @@ const AdminStudents = () => {
       rollNo: student.studentDetails?.rollNo || '',
       classId: student.classId?._id || student.classId || '',
       admissionYear: student.studentDetails?.admissionYear || '',
-      currentYear: student.studentDetails?.currentYear || ''
+      currentYear: student.studentDetails?.currentYear ? String(student.studentDetails.currentYear) : ''
     });
     setShowModal(true);
   };
