@@ -94,7 +94,10 @@ const StudentJoinSession = () => {
         setMeetingLoading(false);
 
         api.addEventListeners({
-          videoConferenceLeft: () => handleLeft(false) // Triggered by refresh/hangup - do NOT call backend leave
+          videoConferenceJoined: handleJoined,
+          videoConferenceLeft: () => handleLeft(false), // Triggered by refresh/hangup - do NOT call backend leave
+          participantJoined: (participant) => console.log('Participant joined:', participant),
+          participantLeft: (participant) => console.log('Participant left:', participant)
         });
       } catch (error) {
         console.error("❌ Jitsi initialization failed", error);

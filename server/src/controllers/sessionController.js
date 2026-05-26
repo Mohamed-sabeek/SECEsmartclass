@@ -164,10 +164,23 @@ const endSession = asyncHandler(async (req, res) => {
     
     for (const studentEntry of session.students) {
       let totalAttendedSeconds = 0;
-      studentEntry.logs.forEach(log => {
-        if (log.leaveTime) {
-          totalAttendedSeconds += Math.floor((new Date(log.leaveTime) - new Date(log.joinTime)) / 1000);
-        }
+      
+      const studentEngagement = await Engagement.findOne({ sessionId: session._id, studentId: studentEntry.studentId });
+      const tabSwitchCount = studentEngagement ? studentEngagement.tabSwitchCount : 0;
+
+      console.log(`\n[DEBUG] Finalizing attendance for student: ${studentEntry.studentId}`);
+      console.log(`[DEBUG] Raw Logs:`, JSON.stringify(studentEntry.logs, null, 2));
+      console.log(`[DEBUG] Tab Switches:`, tabSwitchCount);
+
+      const validLogs = studentEntry.logs.filter(log => {
+        if (!log.joinTime || !log.leaveTime) return false;
+        const join = new Date(log.joinTime);
+        const leave = new Date(log.leaveTime);
+        return !isNaN(join) && !isNaN(leave) && join <= leave;
+      });
+
+      validLogs.forEach(log => {
+        totalAttendedSeconds += Math.floor((new Date(log.leaveTime) - new Date(log.joinTime)) / 1000);
       });
 
       const percentage = Number(((totalAttendedSeconds / totalSessionSeconds) * 100).toFixed(1));
@@ -178,6 +191,8 @@ const endSession = asyncHandler(async (req, res) => {
       const durationStr = totalAttendedSeconds > 0 
         ? (attMins > 0 ? `${attMins} mins ${attSecs} secs` : `${attSecs} secs`)
         : '0 secs';
+
+      console.log(`[DEBUG] Summary -> Duration: ${durationStr}, Percentage: ${percentage}%, Status: ${finalStatus}\n`);
 
       await Attendance.findOneAndUpdate(
         { sessionId: session._id, studentId: studentEntry.studentId },
@@ -528,18 +543,27 @@ const getSessionReport = asyncHandler(async (req, res) => {
       let logs = [];
 
       if (studentEntry && studentEntry.logs.length > 0) {
-        const sortedLogs = studentEntry.logs.sort((a, b) => new Date(a.joinTime) - new Date(b.joinTime));
-        firstJoinTime = sortedLogs[0].joinTime;
-        lastLeaveTime = sortedLogs[sortedLogs.length - 1].leaveTime;
-
-        logs = sortedLogs.map(log => {
-          const duration = log.leaveTime ? Math.floor((new Date(log.leaveTime) - new Date(log.joinTime)) / 1000) : 0;
-          totalAttendedSeconds += duration;
-          return {
-            joinTime: log.joinTime,
-            leaveTime: log.leaveTime || null
-          };
+        const validLogs = studentEntry.logs.filter(log => {
+          if (!log.joinTime || !log.leaveTime) return false;
+          const join = new Date(log.joinTime);
+          const leave = new Date(log.leaveTime);
+          return !isNaN(join) && !isNaN(leave) && join <= leave;
         });
+
+        if (validLogs.length > 0) {
+          const sortedLogs = validLogs.sort((a, b) => new Date(a.joinTime) - new Date(b.joinTime));
+          firstJoinTime = sortedLogs[0].joinTime;
+          lastLeaveTime = sortedLogs[sortedLogs.length - 1].leaveTime;
+
+          logs = sortedLogs.map(log => {
+            const duration = Math.floor((new Date(log.leaveTime) - new Date(log.joinTime)) / 1000);
+            totalAttendedSeconds += duration;
+            return {
+              joinTime: log.joinTime,
+              leaveTime: log.leaveTime
+            };
+          });
+        }
       }
 
       const attendancePercentage = Number(((totalAttendedSeconds / totalSessionSeconds) * 100).toFixed(1));
@@ -619,19 +643,24 @@ const exportSessionReportCSV = asyncHandler(async (req, res) => {
       let totalAttendedSeconds = 0;
 
       if (studentEntry && studentEntry.logs.length > 0) {
-        const sortedLogs = studentEntry.logs.sort((a, b) => new Date(a.joinTime) - new Date(b.joinTime));
-        firstJoinStr = new Date(sortedLogs[0].joinTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-        
-        const lastLog = sortedLogs[sortedLogs.length - 1];
-        if (lastLog.leaveTime) {
-          lastLeaveStr = new Date(lastLog.leaveTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-        }
-
-        studentEntry.logs.forEach(log => {
-          if (log.leaveTime) {
-            totalAttendedSeconds += Math.floor((new Date(log.leaveTime) - new Date(log.joinTime)) / 1000);
-          }
+        const validLogs = studentEntry.logs.filter(log => {
+          if (!log.joinTime || !log.leaveTime) return false;
+          const join = new Date(log.joinTime);
+          const leave = new Date(log.leaveTime);
+          return !isNaN(join) && !isNaN(leave) && join <= leave;
         });
+
+        if (validLogs.length > 0) {
+          const sortedLogs = validLogs.sort((a, b) => new Date(a.joinTime) - new Date(b.joinTime));
+          firstJoinStr = new Date(sortedLogs[0].joinTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+          
+          const lastLog = sortedLogs[sortedLogs.length - 1];
+          lastLeaveStr = new Date(lastLog.leaveTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+
+          validLogs.forEach(log => {
+            totalAttendedSeconds += Math.floor((new Date(log.leaveTime) - new Date(log.joinTime)) / 1000);
+          });
+        }
       }
 
       const percentage = Number(((totalAttendedSeconds / totalSessionSeconds) * 100).toFixed(1));
@@ -717,13 +746,20 @@ const exportSessionReportPDF = asyncHandler(async (req, res) => {
       let lastLeave = '—';
 
       if (entry && entry.logs.length > 0) {
-        const sorted = entry.logs.sort((a, b) => new Date(a.joinTime) - new Date(b.joinTime));
-        firstJoin = new Date(sorted[0].joinTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-        const lastLog = sorted[sorted.length - 1];
-        if (lastLog.leaveTime) {
+        const validLogs = entry.logs.filter(log => {
+          if (!log.joinTime || !log.leaveTime) return false;
+          const join = new Date(log.joinTime);
+          const leave = new Date(log.leaveTime);
+          return !isNaN(join) && !isNaN(leave) && join <= leave;
+        });
+
+        if (validLogs.length > 0) {
+          const sorted = validLogs.sort((a, b) => new Date(a.joinTime) - new Date(b.joinTime));
+          firstJoin = new Date(sorted[0].joinTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+          const lastLog = sorted[sorted.length - 1];
           lastLeave = new Date(lastLog.leaveTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+          validLogs.forEach(l => { attendedSecs += Math.floor((new Date(l.leaveTime) - new Date(l.joinTime)) / 1000); });
         }
-        entry.logs.forEach(l => { if (l.leaveTime) attendedSecs += Math.floor((new Date(l.leaveTime) - new Date(l.joinTime)) / 1000); });
       }
 
       const perc = Number(((attendedSecs / totalSessionSeconds) * 100).toFixed(1));
