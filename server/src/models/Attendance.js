@@ -28,5 +28,8 @@ const attendanceSchema = new mongoose.Schema({
 
 // Ensure a student only has one attendance entry per session
 attendanceSchema.index({ sessionId: 1, studentId: 1 }, { unique: true });
+attendanceSchema.index({ studentId: 1 });
+attendanceSchema.index({ sessionId: 1 });
+attendanceSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Attendance', attendanceSchema);

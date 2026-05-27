@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import TableSkeleton from './skeletons/TableSkeleton';
 
 const TeacherSessionDetails = () => {
   const { sessionId } = useParams();
@@ -90,11 +91,7 @@ const TeacherSessionDetails = () => {
   };
 
   if (loading) {
-    return (
-      <div className="h-96 flex items-center justify-center bg-white rounded-[2.5rem] border border-gray-100 shadow-sm">
-        <Loader2 className="animate-spin text-[#FFD700]" size={40} />
-      </div>
-    );
+    return <TableSkeleton />;
   }
 
   if (!session) return null;

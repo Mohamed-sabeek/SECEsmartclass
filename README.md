@@ -37,6 +37,15 @@ Integrates **Jitsi Meet API** for secure, high-fidelity video conferencing direc
 *   **Full Responsiveness**: Optimized grid systems that adapt seamlessly from desktop administration to mobile participation.
 *   **Accessibility**: Built with Headless UI to ensure high standards of interaction and consistency.
 
+### 5. High-Performance Optimization Architecture
+To ensure high scalability and sub-second response times even under heavy academic cohorts, the platform integrates a modern performance layer:
+*   **Projection & Lean Querying**: Employs Mongoose `.select()` and `.lean()` to load only necessary fields, eliminating the overhead of full document hydration.
+*   **Strategic Database Indexing**: Multi-field compound indexes on `Attendance` (`studentId`, `sessionId`), `Session` (`teacherId`, `classId`, `startTime`), and `Class` (`departmentId`, `year`) ensure index-covered scans for zero-latency reports.
+*   **Backend Aggregated Analytics**: Aggregates calculation overhead (e.g. attendance ratios, counts, and averages) directly within server queries, offloading CPU-intensive loops from the client's browser.
+*   **Server-Side Search & Pagination**: Enforces pagination (`page`, `limit`) and server-side debounced regex searching (`search`) to limit DOM nodes and network transport sizes to 6-10 rows per view.
+*   **Lazy Loading & Suspense Shimmering**: Implements React `lazy` routing boundaries wrapped in custom shimmering skeleton layouts (`TableSkeleton`, `ProfileSkeleton`) to maximize initial paint speeds.
+*   **Cloudinary Asset Pipeline**: Auto-transforms profile images on the fly via CDN parameters (`w_200,h_200,c_fill,q_auto,f_auto`) to achieve lightweight assets and microsecond rendering.
+
 ---
 
 ## 💻 Technical Stack

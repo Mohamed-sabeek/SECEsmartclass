@@ -6,6 +6,7 @@ import defaultAvatar from '../assets/default-avatar.jpg';
 import useDebounce from '../hooks/useDebounce';
 import Pagination from './common/Pagination';
 import Dropdown from './ui/Dropdown';
+import { getOptimizedAvatar } from '../utils/imageUtils';
 
 const AdminTeachers = () => {
   const [showModal, setShowModal] = useState(false);
@@ -236,11 +237,7 @@ const AdminTeachers = () => {
           </div>
         </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-24">
-            <div className="w-16 h-16 border-4 border-[#FFD700] border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        ) : filteredTeachers.length === 0 ? (
+        {!loading && filteredTeachers.length === 0 ? (
           <div className="text-center py-24">
             <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
               <Users className="text-gray-300" size={48} />
@@ -261,13 +258,40 @@ const AdminTeachers = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {filteredTeachers.map((teacher) => (
+                {loading ?
+                  [1, 2, 3, 4, 5].map((i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="px-10 py-5">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 rounded-xl bg-gray-105 mr-4"></div>
+                          <div className="space-y-2">
+                            <div className="h-4 w-32 bg-gray-200 rounded-lg"></div>
+                            <div className="h-3 w-24 bg-gray-200 rounded-lg"></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-10 py-5">
+                        <div className="h-4 w-20 bg-gray-200 rounded-lg"></div>
+                      </td>
+                      <td className="px-10 py-5">
+                        <div className="h-6 w-32 bg-gray-200 rounded-xl"></div>
+                      </td>
+                      <td className="px-10 py-5">
+                        <div className="h-4 w-24 bg-gray-200 rounded-lg"></div>
+                      </td>
+                      <td className="px-10 py-5">
+                        <div className="h-8 w-20 bg-gray-200 rounded-lg mx-auto"></div>
+                      </td>
+                    </tr>
+                  ))
+                :
+                  filteredTeachers.map((teacher) => (
                   <tr key={teacher._id} className="group hover:bg-yellow-50/30 transition-all duration-300">
                     <td className="px-10 py-5">
                       <div className="flex items-center">
                         <div className="w-10 h-10 rounded-xl bg-[#1A1A1A] flex items-center justify-center text-[#FFD700] font-black text-sm mr-4 shadow-lg group-hover:rotate-6 transition-transform overflow-hidden">
                           <img 
-                            src={teacher.avatar || defaultAvatar} 
+                            src={getOptimizedAvatar(teacher.avatar)} 
                             alt={teacher.name} 
                             onError={(e) => {
                               e.currentTarget.src = defaultAvatar;

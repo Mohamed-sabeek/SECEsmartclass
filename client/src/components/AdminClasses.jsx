@@ -201,11 +201,7 @@ const AdminClasses = () => {
           </div>
         </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-24">
-            <div className="w-16 h-16 border-4 border-[#FFD700] border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        ) : filteredClasses.length === 0 ? (
+        {!loading && filteredClasses.length === 0 ? (
           <div className="text-center py-24">
             <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
               <LayoutGrid className="text-gray-300" size={48} />
@@ -226,7 +222,31 @@ const AdminClasses = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {filteredClasses.map((cls) => (
+                {loading ?
+                  [1, 2, 3, 4].map((i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="px-10 py-5">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 rounded-xl bg-gray-105 mr-4"></div>
+                          <div className="h-4 w-32 bg-gray-250 rounded-lg"></div>
+                        </div>
+                      </td>
+                      <td className="px-10 py-5">
+                        <div className="h-4 w-40 bg-gray-200 rounded-lg"></div>
+                      </td>
+                      <td className="px-10 py-5">
+                        <div className="h-4 w-20 bg-gray-200 rounded-lg"></div>
+                      </td>
+                      <td className="px-10 py-5">
+                        <div className="h-4 w-12 bg-gray-200 rounded-lg"></div>
+                      </td>
+                      <td className="px-10 py-5">
+                        <div className="h-8 w-20 bg-gray-200 rounded-lg mx-auto"></div>
+                      </td>
+                    </tr>
+                  ))
+                :
+                  filteredClasses.map((cls) => (
                   <tr key={cls._id} className="group hover:bg-yellow-50/30 transition-all duration-300 cursor-default">
                     <td className="px-10 py-5">
                       <div className="flex items-center">

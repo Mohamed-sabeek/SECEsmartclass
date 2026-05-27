@@ -56,10 +56,10 @@ const getStudentDashboard = asyncHandler(async (req, res) => {
 const getStudentAttendance = asyncHandler(async (req, res) => {
   try {
     const studentId = req.user.id;
-    const student = await User.findById(studentId);
+    const student = await User.findById(studentId).select('classId').lean();
 
     if (!student || !student.classId) {
-      return res.status(200).json({ success: true, data: [] });
+      return res.status(200).json({ success: true, data: { totalClasses: 0, presentCount: 0, absentCount: 0, percentage: 0 } });
     }
 
     // Total sessions conducted for student's class
@@ -67,7 +67,7 @@ const getStudentAttendance = asyncHandler(async (req, res) => {
       classId: student.classId
     });
 
-    const sessionsOfClass = await Session.find({ classId: student.classId }).select('_id');
+    const sessionsOfClass = await Session.find({ classId: student.classId }).select('_id').lean();
     const sessionIds = sessionsOfClass.map(s => s._id);
 
     const presentCount = await Attendance.countDocuments({
@@ -94,37 +94,70 @@ const getStudentAttendance = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc Get student session history
+// @desc Get student session history with pagination and status/date filtering
 // @route GET /api/student/history
 // @access Private (Student)
 const getStudentHistory = asyncHandler(async (req, res) => {
   try {
     const studentId = req.user.id;
-    const student = await User.findById(studentId);
+    const { status, date } = req.query;
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 6;
+    const skip = (page - 1) * limit;
+
+    const student = await User.findById(studentId).select('classId').lean();
 
     if (!student || !student.classId) {
-      return res.status(200).json({ success: true, data: [] });
+      return res.status(200).json({ 
+        success: true, 
+        data: [],
+        pagination: { page, limit, totalCount: 0, totalPages: 0 }
+      });
     }
 
-    // Get all sessions for this student's class (LIVE or ENDED)
-    const sessions = await Session.find({ 
-      classId: student.classId
-    })
-    .populate('teacherId', 'name')
-    .populate('classId', 'className section year')
-    .sort({ startTime: -1 });
+    // Fetch all attendance records for this student
+    const attendanceQuery = { studentId };
+    if (status && status !== 'All') {
+      attendanceQuery.status = status.toLowerCase(); // 'present' or 'absent'
+    }
 
-    const sessionIds = sessions.map(s => s._id);
-
-    // Get all attendance records for this student in these sessions
-    const attendanceRecords = await Attendance.find({
-      studentId,
-      sessionId: { $in: sessionIds }
-    });
+    const attendanceRecords = await Attendance.find(attendanceQuery)
+      .select('sessionId status duration attendancePercentage')
+      .lean();
 
     const attendanceMap = new Map(
       attendanceRecords.map(a => [a.sessionId.toString(), a])
     );
+
+    // Build Session query
+    const sessionQuery = { classId: student.classId };
+    
+    // If status filter is active, only fetch sessions matching the status
+    if (status && status !== 'All') {
+      const matchingSessionIds = attendanceRecords.map(a => a.sessionId);
+      sessionQuery._id = { $in: matchingSessionIds };
+    }
+
+    if (date) {
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+      sessionQuery.startTime = { $gte: startOfDay, $lte: endOfDay };
+    }
+
+    const totalCount = await Session.countDocuments(sessionQuery);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // Get all sessions for this student's class
+    const sessions = await Session.find(sessionQuery)
+      .select('_id classId teacherId startTime endTime')
+      .populate('teacherId', 'name')
+      .populate('classId', 'className section year')
+      .sort({ startTime: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
 
     const result = sessions.map(session => {
       const record = attendanceMap.get(session._id.toString());
@@ -144,7 +177,13 @@ const getStudentHistory = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: result
+      data: result,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages
+      }
     });
   } catch (error) {
     console.error('STUDENT HISTORY ERROR:', error.message);

@@ -4,6 +4,7 @@ import { Users, ArrowLeft, Loader2, GraduationCap, Mail, Calendar } from 'lucide
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import Pagination from './common/Pagination';
+import TableSkeleton from './skeletons/TableSkeleton';
 
 const getYearLabel = (year) => {
   if (year === 1) return "1st Year";
@@ -54,11 +55,7 @@ const TeacherBatchRoster = () => {
   };
 
   if (loading) {
-    return (
-      <div className="h-96 flex items-center justify-center bg-white rounded-[2.5rem] border border-gray-100 shadow-sm">
-        <Loader2 className="animate-spin text-[#FFD700]" size={40} />
-      </div>
-    );
+    return <TableSkeleton />;
   }
 
   return (

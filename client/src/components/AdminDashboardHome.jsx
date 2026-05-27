@@ -1,6 +1,7 @@
 import { Building2, Users, GraduationCap, TrendingUp } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import DashboardCardSkeleton from './skeletons/DashboardCardSkeleton';
 
 const AdminDashboardHome = () => {
   const [stats, setStats] = useState({
@@ -43,11 +44,7 @@ const AdminDashboardHome = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-10">
-        <div className="w-16 h-16 border-4 border-[#FFD700] border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+    return <DashboardCardSkeleton />;
   }
 
   return (

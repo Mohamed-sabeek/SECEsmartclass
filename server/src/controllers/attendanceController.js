@@ -2,18 +2,20 @@ const Attendance = require('../models/Attendance');
 const Session = require('../models/Session');
 const User = require('../models/User');
 const asyncHandler = require('../utils/asyncHandler');
-const mongoose = require('mongoose');
 
-// @desc Get teacher's student attendance analytics
+// @desc Get teacher's student attendance analytics with backend pagination and search
 // @route GET /api/attendance/teacher
 // @access Private (Teacher)
 const getTeacherAttendanceAnalytics = asyncHandler(async (req, res) => {
   try {
     const teacherId = req.user.id;
-    const { classId } = req.query;
+    const { classId, search } = req.query;
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
     // 1. Get the teacher's profile to know their assigned classes
-    const teacher = await User.findById(teacherId);
+    const teacher = await User.findById(teacherId).select('assignedClasses').lean();
     if (!teacher) {
       return res.status(404).json({ success: false, message: 'Teacher not found' });
     }
@@ -24,20 +26,19 @@ const getTeacherAttendanceAnalytics = asyncHandler(async (req, res) => {
     const targetClassIds = classId ? [classId] : assignedClasses;
 
     if (targetClassIds.length === 0) {
-      return res.status(200).json({ success: true, data: [] });
+      return res.status(200).json({
+        success: true,
+        data: [],
+        pagination: { page, limit, totalCount: 0, totalPages: 0 },
+        stats: { totalStudents: 0, avgPercentage: 0, totalSessions: 0 }
+      });
     }
 
-    // 3. Find all students in these classes
-    const students = await User.find({
-      role: 'student',
-      classId: { $in: targetClassIds }
-    }).select('name studentDetails classId email');
-
-    // 4. Find all sessions for these classes by this teacher
+    // 3. Find all target sessions for these classes by this teacher
     const sessions = await Session.find({
       teacherId,
       classId: { $in: targetClassIds }
-    }).select('_id classId');
+    }).select('_id classId').lean();
 
     // Create a map for session counts per class
     const sessionsByClass = {};
@@ -48,11 +49,11 @@ const getTeacherAttendanceAnalytics = asyncHandler(async (req, res) => {
 
     const sessionIds = sessions.map(s => s._id);
 
-    // 5. Get attendance records for these sessions
+    // 4. Get attendance records for these sessions
     const attendanceRecords = await Attendance.find({
       sessionId: { $in: sessionIds },
       status: 'present'
-    });
+    }).select('studentId sessionId').lean();
 
     // Create a map for attendance counts per student
     const attendanceByStudent = {};
@@ -61,15 +62,40 @@ const getTeacherAttendanceAnalytics = asyncHandler(async (req, res) => {
       attendanceByStudent[sid] = (attendanceByStudent[sid] || 0) + 1;
     });
 
-    // 6. Calculate analytics for each student
-    const result = students.map(student => {
-      const cid = student.classId.toString();
+    // 5. Query ALL students matching filters to compute global stats
+    const studentQuery = {
+      role: 'student',
+      classId: { $in: targetClassIds }
+    };
+
+    if (search) {
+      studentQuery.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { 'studentDetails.rollNo': { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const allStudents = await User.find(studentQuery)
+      .select('name studentDetails classId email')
+      .lean();
+
+    // 6. Calculate analytics for ALL matched students to calculate avgPercentage
+    let totalPercentageSum = 0;
+    let maxTotalClasses = 0;
+
+    const allCalculated = allStudents.map(student => {
+      const cid = student.classId?.toString() || '';
       const sid = student._id.toString();
 
       const totalClasses = sessionsByClass[cid] || 0;
       const presentCount = attendanceByStudent[sid] || 0;
       const absentCount = Math.max(0, totalClasses - presentCount);
-      const percentage = totalClasses > 0 ? ((presentCount / totalClasses) * 100).toFixed(1) : 0;
+      const percentage = totalClasses > 0 ? parseFloat(((presentCount / totalClasses) * 100).toFixed(1)) : 0;
+
+      totalPercentageSum += percentage;
+      if (totalClasses > maxTotalClasses) {
+        maxTotalClasses = totalClasses;
+      }
 
       return {
         studentId: sid,
@@ -78,16 +104,34 @@ const getTeacherAttendanceAnalytics = asyncHandler(async (req, res) => {
         totalClasses,
         presentCount,
         absentCount,
-        percentage: Number(percentage)
+        percentage
       };
     });
 
-    // Sort by roll number or name
-    result.sort((a, b) => a.name.localeCompare(b.name));
+    // Sort by name
+    allCalculated.sort((a, b) => a.name.localeCompare(b.name));
+
+    const totalStudents = allCalculated.length;
+    const avgPercentage = totalStudents > 0 ? parseFloat((totalPercentageSum / totalStudents).toFixed(1)) : 0;
+
+    // 7. Paginate the calculated analytics array
+    const paginatedStudents = allCalculated.slice(skip, skip + limit);
+    const totalPages = Math.ceil(totalStudents / limit);
 
     res.status(200).json({
       success: true,
-      data: result
+      data: paginatedStudents,
+      pagination: {
+        page,
+        limit,
+        totalCount: totalStudents,
+        totalPages
+      },
+      stats: {
+        totalStudents,
+        avgPercentage,
+        totalSessions: maxTotalClasses
+      }
     });
   } catch (error) {
     console.error('ATTENDANCE ANALYTICS ERROR:', error);

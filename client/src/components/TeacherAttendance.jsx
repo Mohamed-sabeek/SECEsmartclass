@@ -4,6 +4,8 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import Dropdown from './ui/Dropdown';
 import Pagination from './common/Pagination';
+import useDebounce from '../hooks/useDebounce';
+import TableSkeleton from './skeletons/TableSkeleton';
 
 const TeacherAttendance = ({ teacher }) => {
   const [attendanceData, setAttendanceData] = useState([]);
@@ -11,25 +13,41 @@ const TeacherAttendance = ({ teacher }) => {
   const [selectedClass, setSelectedClass] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [stats, setStats] = useState({ totalStudents: 0, avgPercentage: 0, totalSessions: 0 });
   const itemsPerPage = 8;
+
+  const debouncedSearch = useDebounce(searchTerm, 500);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedClass]);
+    fetchAttendance(1);
+  }, [debouncedSearch, selectedClass]);
 
   useEffect(() => {
-    fetchAttendance();
-  }, [selectedClass]);
+    fetchAttendance(currentPage);
+  }, [currentPage]);
 
-  const fetchAttendance = async () => {
+  const fetchAttendance = async (page = currentPage) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
       const response = await axios.get('/api/attendance/teacher', {
         headers: { Authorization: `Bearer ${token}` },
-        params: { classId: selectedClass }
+        params: { 
+          classId: selectedClass,
+          search: debouncedSearch,
+          page,
+          limit: itemsPerPage
+        }
       });
       setAttendanceData(response.data.data || []);
+      if (response.data.pagination) {
+        setTotalPages(response.data.pagination.totalPages || 1);
+      }
+      if (response.data.stats) {
+        setStats(response.data.stats);
+      }
     } catch (error) {
       console.error('Error fetching attendance:', error);
       toast.error('Failed to load attendance analytics');
@@ -38,21 +56,7 @@ const TeacherAttendance = ({ teacher }) => {
     }
   };
 
-  const filteredData = attendanceData.filter(student => 
-    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.rollNumber.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage) || 1;
-  const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-  const stats = {
-    totalStudents: attendanceData.length,
-    avgPercentage: attendanceData.length > 0 
-      ? (attendanceData.reduce((acc, curr) => acc + curr.percentage, 0) / attendanceData.length).toFixed(1) 
-      : 0,
-    totalSessions: attendanceData.length > 0 ? Math.max(...attendanceData.map(s => s.totalClasses)) : 0
-  };
+  const paginatedData = attendanceData;
 
   const getPercentageColor = (pct) => {
     if (pct >= 75) return 'text-green-500 bg-green-50 border-green-100';
@@ -67,11 +71,7 @@ const TeacherAttendance = ({ teacher }) => {
   };
 
   if (loading && attendanceData.length === 0) {
-    return (
-      <div className="h-96 flex items-center justify-center bg-white rounded-[2.5rem] border border-gray-100 shadow-sm">
-        <Loader2 className="animate-spin text-[#FFD700]" size={40} />
-      </div>
-    );
+    return <TableSkeleton />;
   }
 
   return (
@@ -167,7 +167,7 @@ const TeacherAttendance = ({ teacher }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filteredData.length === 0 ? (
+              {paginatedData.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="px-10 py-24 text-center">
                      <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
@@ -233,7 +233,7 @@ const TeacherAttendance = ({ teacher }) => {
           </table>
         </div>
         
-        {filteredData.length > 0 && (
+        {paginatedData.length > 0 && (
           <div className="py-4 bg-white border-t border-gray-100">
             <Pagination 
               currentPage={currentPage}

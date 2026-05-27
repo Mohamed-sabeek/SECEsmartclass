@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { 
   LogOut, 
   LayoutDashboard, 
@@ -18,13 +18,17 @@ import toast from 'react-hot-toast';
 // Sub-components
 import StudentDashboardHome from '../components/StudentDashboardHome';
 import StudentJoinSession from '../components/StudentJoinSession';
-import StudentAttendance from '../components/StudentAttendance';
 import StudentTeachers from '../components/StudentTeachers';
-import StudentProfile from './student/StudentProfile';
+import ProfileSkeleton from '../components/ProfileSkeleton';
+import TableSkeleton from '../components/TableSkeleton';
+
+const StudentProfile = lazy(() => import('./student/StudentProfile'));
+const StudentAttendance = lazy(() => import('../components/StudentAttendance'));
 import { useNavigate, useParams } from 'react-router-dom';
 import PasswordWarningBanner from '../components/PasswordWarningBanner';
 
 import Logo from '../assets/favicon.png';
+import DashboardCardSkeleton from '../components/skeletons/DashboardCardSkeleton';
 
 const StudentDashboard = () => {
   const { logout, user } = useAuth();
@@ -90,11 +94,19 @@ const StudentDashboard = () => {
         return <StudentJoinSession />;
       case 'attendance':
       case 'history': // Handle legacy route
-        return <StudentAttendance />;
+        return (
+          <Suspense fallback={<TableSkeleton />}>
+            <StudentAttendance />
+          </Suspense>
+        );
       case 'teachers':
         return <StudentTeachers />;
       case 'profile':
-        return <StudentProfile />;
+        return (
+          <Suspense fallback={<ProfileSkeleton />}>
+            <StudentProfile />
+          </Suspense>
+        );
       default:
         return <StudentDashboardHome user={studentData} />;
     }
@@ -206,9 +218,7 @@ const StudentDashboard = () => {
               navigate('/student/profile');
             }} />
             {loading ? (
-              <div className="h-96 flex items-center justify-center">
-                <div className="w-16 h-16 border-4 border-[#FFD700] border-t-transparent rounded-full animate-spin"></div>
-              </div>
+              <DashboardCardSkeleton />
             ) : renderContent()}
           </div>
         </div>

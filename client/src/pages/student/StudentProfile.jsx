@@ -4,6 +4,9 @@ import { Mail, Hash, BookOpen, Calendar, User as UserIcon, GraduationCap, Buildi
 import toast from "react-hot-toast";
 import defaultAvatar from "../../assets/default-avatar.jpg";
 import ChangePasswordForm from "../../components/ChangePasswordForm";
+import { useAuth } from "../../context/AuthContext";
+import { getOptimizedAvatar } from "../../utils/imageUtils";
+import ProfileSkeleton from "../../components/skeletons/ProfileSkeleton";
 
 const getYearLabel = (year) => {
   if (year === 1) return "1st Year";
@@ -14,8 +17,9 @@ const getYearLabel = (year) => {
 };
 
 const StudentProfile = () => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { profileData, fetchProfile, updateUserInfo } = useAuth();
+  const [user, setUser] = useState(profileData);
+  const [loading, setLoading] = useState(!profileData);
   const [editMode, setEditMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -23,23 +27,29 @@ const StudentProfile = () => {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get("/api/users/me", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setUser(res.data.data);
-    } catch (error) {
-      console.error("Failed to load profile", error);
-      toast.error("Failed to load profile");
-    } finally {
-      setLoading(false);
-    }
-  };
+    let active = true;
+    const loadProfile = async () => {
+      try {
+        const data = await fetchProfile();
+        if (active) {
+          setUser(data);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error("Failed to load profile", error);
+        toast.error("Failed to load profile");
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+    
+    loadProfile();
+    
+    return () => {
+      active = false;
+    };
+  }, [fetchProfile]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -75,7 +85,8 @@ const StudentProfile = () => {
       setSelectedFile(null);
       setPreviewUrl(null);
       
-      // Update local state with new avatar URL from response
+      // Update local state and sync with AuthContext
+      updateUserInfo({ avatar: res.data.avatar });
       setUser(prev => ({ ...prev, avatar: res.data.avatar }));
     } catch (error) {
       console.error("Update failed", error);
@@ -93,11 +104,7 @@ const StudentProfile = () => {
   };
 
   if (loading) {
-    return (
-      <div className="h-96 flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-[#FFD700] border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
   if (!user) return <p className="p-4 text-center mt-10 text-gray-500 font-bold">Failed to load profile data.</p>;
@@ -116,7 +123,7 @@ const StudentProfile = () => {
             <div className="w-48 h-48 rounded-[2.5rem] bg-gradient-to-br from-[#FFD700] to-[#FFB700] p-1 shadow-2xl shadow-yellow-500/20 transform rotate-2 hover:rotate-0 transition-all duration-500 overflow-hidden">
               <div className="w-full h-full bg-white rounded-[2.3rem] flex items-center justify-center overflow-hidden relative">
                 <img 
-                  src={previewUrl || user.avatar || defaultAvatar} 
+                  src={previewUrl || getOptimizedAvatar(user.avatar)} 
                   alt="Profile" 
                   onError={(e) => {
                     e.currentTarget.src = defaultAvatar;

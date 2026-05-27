@@ -2,9 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { History, Calendar, Clock, Loader2, ArrowRight, X } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { formatTime, formatDate } from '../utils/dateUtils';
 import Dropdown from './ui/Dropdown';
 import Pagination from './common/Pagination';
+import TableSkeleton from './skeletons/TableSkeleton';
 
 const TeacherHistory = ({ teacher }) => {
   const [history, setHistory] = useState([]);
@@ -16,24 +18,36 @@ const TeacherHistory = ({ teacher }) => {
     date: ''
   });
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 6;
   const dateInputRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     setCurrentPage(1);
-    fetchHistory();
+    fetchHistory(1);
   }, [filters]);
 
-  const fetchHistory = async () => {
+  useEffect(() => {
+    fetchHistory(currentPage);
+  }, [currentPage]);
+
+  const fetchHistory = async (page = currentPage) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
       const response = await axios.get('/api/sessions/history', {
         headers: { Authorization: `Bearer ${token}` },
-        params: filters
+        params: {
+          ...filters,
+          page,
+          limit: itemsPerPage
+        }
       });
-      setHistory(response.data.data);
+      setHistory(response.data.data || []);
+      if (response.data.pagination) {
+        setTotalPages(response.data.pagination.totalPages || 1);
+      }
     } catch (error) {
       console.error('Error fetching history:', error);
       toast.error('Failed to load history');
@@ -79,8 +93,11 @@ const TeacherHistory = ({ teacher }) => {
 
   const activeFilterCount = Object.values(filters).filter(v => v !== '').length;
 
-  const totalPages = Math.ceil(history.length / itemsPerPage) || 1;
-  const paginatedHistory = history.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedHistory = history;
+
+  if (loading && history.length === 0) {
+    return <TableSkeleton />;
+  }
 
   return (
     <div className="animate-in slide-in-from-bottom duration-700">
@@ -200,12 +217,7 @@ const TeacherHistory = ({ teacher }) => {
         </div>
       )}
 
-      {loading ? (
-        <div className="h-96 flex flex-col items-center justify-center bg-white rounded-[2.5rem] border border-gray-100 shadow-sm">
-           <Loader2 className="animate-spin text-[#FFD700] mb-4" size={40} />
-           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Syncing with academic archives...</p>
-        </div>
-      ) : history.length === 0 ? (
+      {!loading && history.length === 0 ? (
         <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 p-24 text-center">
             <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
                <History className="text-gray-300" size={40} />
@@ -242,7 +254,37 @@ const TeacherHistory = ({ teacher }) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {paginatedHistory.map((session) => (
+                {loading ?
+                  [1, 2, 3, 4, 5].map((i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="px-10 py-6">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 bg-gray-105 rounded-xl mr-4"></div>
+                          <div className="space-y-2">
+                            <div className="h-4 w-32 bg-gray-200 rounded-lg"></div>
+                            <div className="h-3 w-20 bg-gray-200 rounded-lg"></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-10 py-6 text-center">
+                        <div className="h-4 w-20 bg-gray-200 rounded-lg mx-auto"></div>
+                      </td>
+                      <td className="px-10 py-6 text-center">
+                        <div className="h-4 w-24 bg-gray-200 rounded-lg mx-auto"></div>
+                      </td>
+                      <td className="px-10 py-6 text-center">
+                        <div className="h-4 w-20 bg-gray-200 rounded-lg mx-auto"></div>
+                      </td>
+                      <td className="px-10 py-6 text-center">
+                        <div className="h-6 w-16 bg-gray-200 rounded-xl mx-auto"></div>
+                      </td>
+                      <td className="px-10 py-6 text-right">
+                        <div className="h-8 w-20 bg-gray-200 rounded-lg ml-auto"></div>
+                      </td>
+                    </tr>
+                  ))
+                :
+                  paginatedHistory.map((session) => (
                   <tr key={session._id} className="group hover:bg-yellow-50/20 transition-all duration-300">
                     <td className="px-10 py-6">
                       <div className="flex items-center">

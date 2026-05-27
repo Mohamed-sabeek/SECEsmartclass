@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Dropdown from './ui/Dropdown';
+import TableSkeleton from './skeletons/TableSkeleton';
 
 const TeacherSessionReport = () => {
   const { sessionId } = useParams();
@@ -167,14 +168,7 @@ const TeacherSessionReport = () => {
   };
 
   if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-[#F5F5F5]">
-        <div className="flex flex-col items-center space-y-4">
-          <Loader2 className="animate-spin text-[#FFD700]" size={48} />
-          <p className="text-sm font-black text-gray-400 uppercase tracking-[0.2em]">Compiling Attendance Report...</p>
-        </div>
-      </div>
-    );
+    return <TableSkeleton />;
   }
 
   const filteredStudents = getFilteredAndSortedStudents();

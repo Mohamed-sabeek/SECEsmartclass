@@ -22,13 +22,15 @@ const ProtectedRoute = ({ children, allowedRole }) => {
     };
   }, [isAuthenticated]);
 
-  // Show nothing while checking auth state
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F5F5F5]">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#FFD700] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F5F5F5] animate-pulse">
+        <div className="space-y-6 flex flex-col items-center w-full max-w-sm px-6">
+          <div className="w-24 h-24 bg-gray-300/30 rounded-[2rem]"></div>
+          <div className="space-y-3 w-full flex flex-col items-center">
+            <div className="h-6 w-48 bg-gray-200 rounded-lg"></div>
+            <div className="h-4 w-32 bg-gray-200 rounded-lg"></div>
+          </div>
         </div>
       </div>
     );

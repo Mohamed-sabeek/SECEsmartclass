@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Mail, BookOpen, User, Building2, Users } from 'lucide-react';
+import { getOptimizedAvatar } from '../utils/imageUtils';
 
 const StudentTeachers = () => {
   const [teachers, setTeachers] = useState([]);
@@ -28,8 +29,35 @@ const StudentTeachers = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-12 h-12 border-4 border-[#FFD700] border-t-transparent rounded-full animate-spin"></div>
+      <div className="space-y-10 animate-pulse">
+        <div>
+          <div className="h-8 w-64 bg-gray-200 rounded-lg mb-2"></div>
+          <div className="h-4 w-96 bg-gray-200 rounded-lg"></div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-xl shadow-gray-200/50 flex flex-col space-y-8">
+              <div className="flex items-center gap-5">
+                <div className="w-16 h-16 bg-gray-105 rounded-2xl"></div>
+                <div className="space-y-2">
+                  <div className="h-5 w-32 bg-gray-200 rounded-lg"></div>
+                  <div className="h-3 w-20 bg-gray-200 rounded-lg"></div>
+                </div>
+              </div>
+              <div className="space-y-4 pt-6 border-t border-gray-50 flex-1">
+                {[1, 2, 3].map((j) => (
+                  <div key={j} className="flex items-center gap-4">
+                    <div className="w-8 h-8 rounded-xl bg-gray-100"></div>
+                    <div className="h-4 w-40 bg-gray-200 rounded-lg"></div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-8 pt-6 border-t border-gray-50">
+                <div className="h-8 w-32 bg-gray-200 rounded-xl"></div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -66,7 +94,7 @@ const StudentTeachers = () => {
               <div className="flex items-center gap-5 mb-8 relative z-10">
                 <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100 overflow-hidden ring-4 ring-gray-50/50 group-hover:rotate-3 transition-transform duration-500">
                   {teacher.avatar ? (
-                    <img src={teacher.avatar} alt={teacher.name} className="w-full h-full object-cover" />
+                    <img src={getOptimizedAvatar(teacher.avatar)} alt={teacher.name} className="w-full h-full object-cover" />
                   ) : (
                     <User className="text-[#FFD700]" size={32} />
                   )}

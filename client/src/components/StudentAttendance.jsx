@@ -15,6 +15,7 @@ import axios from 'axios';
 import Dropdown from './ui/Dropdown';
 import Pagination from './common/Pagination';
 import { formatTime, formatDate } from '../utils/dateUtils';
+import TableSkeleton from './skeletons/TableSkeleton';
 
 const StudentAttendance = () => {
   const [stats, setStats] = useState(null);
@@ -27,19 +28,25 @@ const StudentAttendance = () => {
   const dateInputRef = useRef(null);
   
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 6;
 
   useEffect(() => {
+    fetchAttendance();
+  }, []);
+
+  useEffect(() => {
     setCurrentPage(1);
+    fetchHistory(1);
   }, [filterStatus, filterDate]);
 
   useEffect(() => {
-    fetchAttendance();
-    fetchHistory();
-  }, []);
+    fetchHistory(currentPage);
+  }, [currentPage]);
 
   const fetchAttendance = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem('token');
       const response = await axios.get('/api/student/attendance', {
         headers: { Authorization: `Bearer ${token}` }
@@ -52,13 +59,23 @@ const StudentAttendance = () => {
     }
   };
 
-  const fetchHistory = async () => {
+  const fetchHistory = async (page = currentPage) => {
     try {
+      setHistoryLoading(true);
       const token = localStorage.getItem('token');
       const response = await axios.get('/api/student/history', {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+          page,
+          limit: itemsPerPage,
+          status: filterStatus,
+          date: filterDate
+        }
       });
-      setHistory(response.data.data);
+      setHistory(response.data.data || []);
+      if (response.data.pagination) {
+        setTotalPages(response.data.pagination.totalPages || 1);
+      }
     } catch (error) {
       console.error('Error fetching attendance history:', error);
     } finally {
@@ -79,25 +96,10 @@ const StudentAttendance = () => {
   };
 
   if (loading && historyLoading) {
-    return (
-      <div className="h-96 flex items-center justify-center bg-white rounded-[2.5rem] border border-gray-100 shadow-sm">
-        <Loader2 className="animate-spin text-[#FFD700]" size={40} />
-      </div>
-    );
+    return <TableSkeleton />;
   }
 
-  const filteredHistory = history.filter(session => {
-    const d = new Date(session.startTime);
-    const sessionDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    
-    const matchStatus = filterStatus === 'All' || session.status === filterStatus;
-    const matchDate = !filterDate || sessionDate === filterDate;
-    
-    return matchStatus && matchDate;
-  });
-
-  const totalPages = Math.ceil(filteredHistory.length / itemsPerPage) || 1;
-  const paginatedHistory = filteredHistory.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedHistory = history;
 
   return (
     <div className="animate-in fade-in duration-700">
@@ -239,11 +241,7 @@ const StudentAttendance = () => {
         </div>
       )}
 
-      {historyLoading ? (
-        <div className="h-64 flex items-center justify-center bg-white rounded-[2.5rem] border border-gray-100 shadow-sm">
-          <Loader2 className="animate-spin text-[#FFD700]" size={40} />
-        </div>
-      ) : history.length === 0 ? (
+      {!historyLoading && history.length === 0 ? (
         <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 p-24 text-center">
             <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
                <History className="text-gray-300" size={40} />
@@ -265,7 +263,34 @@ const StudentAttendance = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {paginatedHistory.map((session) => (
+                {historyLoading ?
+                  [1, 2, 3, 4, 5].map((i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="px-10 py-6">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 bg-gray-105 rounded-xl mr-4"></div>
+                          <div className="space-y-2">
+                            <div className="h-4 w-32 bg-gray-200 rounded-lg"></div>
+                            <div className="h-3 w-20 bg-gray-200 rounded-lg"></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-10 py-6 text-center">
+                        <div className="h-4 w-20 bg-gray-200 rounded-lg mx-auto"></div>
+                      </td>
+                      <td className="px-10 py-6 text-center">
+                        <div className="h-6 w-16 bg-gray-200 rounded-xl mx-auto"></div>
+                      </td>
+                      <td className="px-10 py-6 text-center">
+                        <div className="h-4 w-24 bg-gray-200 rounded-lg mx-auto"></div>
+                      </td>
+                      <td className="px-10 py-6 text-right">
+                        <div className="h-8 w-20 bg-gray-200 rounded-lg ml-auto"></div>
+                      </td>
+                    </tr>
+                  ))
+                :
+                  paginatedHistory.map((session) => (
                   <tr key={session._id} className="group hover:bg-yellow-50/20 transition-all duration-300">
                     <td className="px-10 py-6">
                       <div className="flex items-center">
@@ -320,7 +345,7 @@ const StudentAttendance = () => {
             </table>
           </div>
           
-          {filteredHistory.length > 0 && (
+          {paginatedHistory.length > 0 && (
             <div className="py-4 bg-white border-t border-gray-100">
               <Pagination 
                 currentPage={currentPage}

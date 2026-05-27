@@ -228,6 +228,10 @@ const endSession = asyncHandler(async (req, res) => {
 const getTeacherHistory = asyncHandler(async (req, res) => {
   try {
     const { classId, subject, month, date } = req.query;
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    
     const query = { teacherId: req.user.id };
 
     if (classId) query.classId = classId;
@@ -249,11 +253,27 @@ const getTeacherHistory = asyncHandler(async (req, res) => {
       query.startTime = { $gte: startOfDay, $lte: endOfDay };
     }
 
-    const sessions = await Session.find(query)
-      .populate('classId', 'className year section')
-      .sort({ createdAt: -1 });
+    const totalCount = await Session.countDocuments(query);
+    const totalPages = Math.ceil(totalCount / limit);
 
-    res.status(200).json({ success: true, data: sessions });
+    const sessions = await Session.find(query)
+      .select('_id subject startTime endTime status attendanceCount classId')
+      .populate('classId', 'className year section')
+      .sort({ startTime: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    res.status(200).json({ 
+      success: true, 
+      data: sessions,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages
+      }
+    });
   } catch (error) {
     console.error('GET HISTORY ERROR:', error.message);
     res.status(500).json({ success: false, message: 'Server error', error: error.message });

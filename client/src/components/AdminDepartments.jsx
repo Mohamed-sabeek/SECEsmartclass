@@ -160,11 +160,7 @@ const AdminDepartments = () => {
           </div>
         </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-24">
-            <div className="w-16 h-16 border-4 border-[#FFD700] border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        ) : filteredDepartments.length === 0 ? (
+        {!loading && filteredDepartments.length === 0 ? (
           <div className="text-center py-24">
             <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
               <Building2 className="text-gray-300" size={48} />
@@ -184,7 +180,28 @@ const AdminDepartments = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {filteredDepartments.map((dept) => (
+                {loading ?
+                  [1, 2, 3, 4].map((i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="px-4 sm:px-10 py-4 sm:py-5">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gray-105 mr-3 sm:mr-4 shrink-0"></div>
+                          <div className="h-4 w-32 bg-gray-200 rounded-lg"></div>
+                        </div>
+                      </td>
+                      <td className="px-4 sm:px-10 py-4 sm:py-5 text-center">
+                        <div className="h-6 w-16 bg-gray-200 rounded-lg mx-auto"></div>
+                      </td>
+                      <td className="px-4 sm:px-10 py-4 sm:py-5">
+                        <div className="h-4 w-24 bg-gray-200 rounded-lg"></div>
+                      </td>
+                      <td className="px-10 py-5">
+                        <div className="h-8 w-20 bg-gray-200 rounded-lg mx-auto"></div>
+                      </td>
+                    </tr>
+                  ))
+                :
+                  filteredDepartments.map((dept) => (
                   <tr key={dept._id} className="group hover:bg-yellow-50/30 transition-all duration-300">
                     <td className="px-4 sm:px-10 py-4 sm:py-5">
                       <div className="flex items-center">

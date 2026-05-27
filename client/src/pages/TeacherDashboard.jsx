@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { 
   LogOut, 
   LayoutDashboard, 
@@ -21,16 +21,21 @@ import toast from 'react-hot-toast';
 import TeacherDashboardHome from '../components/TeacherDashboardHome';
 import TeacherClasses from '../components/TeacherClasses';
 import TeacherLiveSession from '../components/TeacherLiveSession';
-import TeacherAttendance from '../components/TeacherAttendance';
-import TeacherHistory from '../components/TeacherHistory';
 import TeacherBatchRoster from '../components/TeacherBatchRoster';
 import TeacherSessionDetails from '../components/TeacherSessionDetails';
 import TeacherSessionReport from '../components/TeacherSessionReport';
-import TeacherProfile from './teacher/TeacherProfile';
+import ProfileSkeleton from '../components/ProfileSkeleton';
+import TableSkeleton from '../components/TableSkeleton';
+
+const TeacherProfile = lazy(() => import('./teacher/TeacherProfile'));
+const TeacherAttendance = lazy(() => import('../components/TeacherAttendance'));
+const TeacherHistory = lazy(() => import('../components/TeacherHistory'));
 import { useParams, useNavigate } from 'react-router-dom';
 import PasswordWarningBanner from '../components/PasswordWarningBanner';
 
 import Logo from '../assets/favicon.png';
+
+import DashboardCardSkeleton from '../components/skeletons/DashboardCardSkeleton';
 
 const TeacherDashboard = () => {
   const { logout, user } = useAuth();
@@ -79,7 +84,7 @@ const TeacherDashboard = () => {
   const fetchProfile = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/users/me', {
+      const response = await axios.get('/api/users/me?analytics=true', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTeacherData(response.data.data);
@@ -116,11 +121,23 @@ const TeacherDashboard = () => {
           preSelectedSubject={preSelectedSubject}
         />;
       case 'attendance':
-        return <TeacherAttendance teacher={teacherData} />;
+        return (
+          <Suspense fallback={<TableSkeleton />}>
+            <TeacherAttendance teacher={teacherData} />
+          </Suspense>
+        );
       case 'history':
-        return <TeacherHistory teacher={teacherData} />;
+        return (
+          <Suspense fallback={<TableSkeleton />}>
+            <TeacherHistory teacher={teacherData} />
+          </Suspense>
+        );
       case 'profile':
-        return <TeacherProfile />;
+        return (
+          <Suspense fallback={<ProfileSkeleton />}>
+            <TeacherProfile />
+          </Suspense>
+        );
       default:
         return <TeacherDashboardHome teacher={teacherData} setActiveTab={setActiveTab} />;
     }
@@ -233,9 +250,7 @@ const TeacherDashboard = () => {
               navigate('/teacher/profile');
             }} />
             {loading ? (
-              <div className="h-96 flex items-center justify-center">
-                <div className="w-16 h-16 border-4 border-[#FFD700] border-t-transparent rounded-full animate-spin"></div>
-              </div>
+              <DashboardCardSkeleton />
             ) : renderContent()}
           </div>
         </div>

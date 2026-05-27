@@ -4,6 +4,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import useDebounce from '../hooks/useDebounce';
 import Dropdown from './ui/Dropdown';
+import TableSkeleton from './skeletons/TableSkeleton';
 
 const AdminAssignTeacher = () => {
   const [teachers, setTeachers] = useState([]);
@@ -160,11 +161,7 @@ const AdminAssignTeacher = () => {
   const filteredTeachers = teachers; // Search handled by server now
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="w-16 h-16 border-4 border-[#FFD700] border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+    return <TableSkeleton />;
   }
 
   return (

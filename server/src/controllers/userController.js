@@ -30,7 +30,8 @@ const getMe = asyncHandler(async (req, res) => {
 
     const userData = user.toObject();
 
-    if (user.role === 'teacher') {
+    // Only compute heavy analytics if explicitly requested via query parameter
+    if (user.role === 'teacher' && req.query.analytics === 'true') {
       const sessions = await Session.find({ teacherId: user._id, status: 'ENDED' });
       const sessionCount = sessions.length;
       userData.totalSessions = sessionCount;
@@ -181,11 +182,12 @@ const getAllUsers = async (req, res) => {
     if (classId) filter.classId = classId;
     if (departmentId) filter.department = departmentId; // department field in User model stores the code
 
-    // 2. Safe Regex Search (name or email)
+    // 2. Safe Regex Search (name, email, or rollNo)
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
+        { email: { $regex: search, $options: 'i' } },
+        { 'studentDetails.rollNo': { $regex: search, $options: 'i' } }
       ];
     }
 
