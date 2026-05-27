@@ -11,6 +11,12 @@ const sessionSchema = new mongoose.Schema({
     ref: 'Class',
     required: true
   },
+  section: {
+    type: String,
+    uppercase: true,
+    trim: true,
+    default: undefined
+  },
   subject: {
     type: String,
     required: true

@@ -146,7 +146,7 @@ const TeacherClasses = ({ teacher, assignedClasses }) => {
                      </div>
                      <span className="text-xs font-black uppercase tracking-widest leading-none">
                         Batch {new Date().getFullYear() - (cls.year || 1)} - {new Date().getFullYear() - (cls.year || 1) + 4}
-                        {cls.section && cls.section !== 'NA' && ` — Section ${cls.section}`}
+                        {cls.sections?.length > 0 && ` — Section${cls.sections.length > 1 ? 's' : ''} ${cls.sections.map(s => s.name).join(', ')}`}
                       </span>
                   </div>
                   {isLive && (

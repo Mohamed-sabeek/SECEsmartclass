@@ -40,6 +40,15 @@ const userSchema = new mongoose.Schema(
       },
       default: undefined
     },
+    section: {
+      type: String,
+      uppercase: true,
+      trim: true,
+      required: function () {
+        return this.role === 'student';
+      },
+      default: undefined
+    },
     assignedClasses: [{ 
       type: mongoose.Schema.Types.ObjectId, 
       ref: 'Class',

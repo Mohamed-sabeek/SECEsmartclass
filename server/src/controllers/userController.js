@@ -17,12 +17,20 @@ const getMe = asyncHandler(async (req, res) => {
       .select('-password')
       .populate({
         path: 'assignedClasses',
+        select: 'className year sections departmentId',
         populate: {
           path: 'departmentId',
           select: 'name code'
         }
       })
-      .populate('classId', 'className year section');
+      .populate({
+        path: 'classId',
+        select: 'className year sections departmentId',
+        populate: {
+          path: 'departmentId',
+          select: 'name code'
+        }
+      });
 
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
@@ -69,7 +77,7 @@ const getMe = asyncHandler(async (req, res) => {
 // Add new user (Admin only)
 const addUser = async (req, res) => {
   try {
-    const { name, email, role, department, classId, rollNo, admissionYear, currentYear, subjects } = req.body;
+    const { name, email, role, department, classId, section, rollNo, admissionYear, currentYear, subjects } = req.body;
 
     // 1. Validate required fields
     if (!name || !email || !role) {
@@ -97,10 +105,11 @@ const addUser = async (req, res) => {
 
     // 5. Add role-based fields ONLY when needed
     if (role === 'student') {
-      if (!rollNo || !admissionYear || !currentYear || !classId) {
-        return res.status(400).json({ message: 'Student roll number, admission year, current year, and class assignment are required' });
+      if (!rollNo || !admissionYear || !currentYear || !classId || !section) {
+        return res.status(400).json({ message: 'Student roll number, admission year, current year, class assignment, and section are required' });
       }
       userData.classId = classId; // Must be present
+      userData.section = section.toUpperCase().trim();
       userData.studentDetails = { rollNo, admissionYear, currentYear };
     } else if (role === 'teacher') {
       let subjectsArray = [];
@@ -167,6 +176,7 @@ const getAllUsers = async (req, res) => {
       role, 
       departmentId, 
       classId, 
+      section,
       search, 
       page = 1, 
       limit = 10 
@@ -180,7 +190,35 @@ const getAllUsers = async (req, res) => {
     const filter = {};
     if (role) filter.role = role;
     if (classId) filter.classId = classId;
-    if (departmentId) filter.department = departmentId; // department field in User model stores the code
+    if (section && section !== 'All') filter.section = section.toUpperCase().trim();
+    
+    if (departmentId) {
+      // Find all classes belonging to this department
+      let deptFilter = {};
+      if (mongoose.Types.ObjectId.isValid(departmentId)) {
+        deptFilter._id = departmentId;
+      } else {
+        deptFilter.code = departmentId.toUpperCase();
+      }
+      
+      const Department = require('../models/Department');
+      const dept = await Department.findOne(deptFilter);
+      if (dept) {
+        const Class = require('../models/Class');
+        const classesInDept = await Class.find({ departmentId: dept._id }).select('_id');
+        const classIdsInDept = classesInDept.map(c => c._id);
+        
+        if (filter.classId) {
+          if (!classIdsInDept.some(id => id.toString() === filter.classId.toString())) {
+            filter.classId = { $in: [] };
+          }
+        } else {
+          filter.classId = { $in: classIdsInDept };
+        }
+      } else {
+        filter.classId = { $in: [] };
+      }
+    }
 
     // 2. Safe Regex Search (name, email, or rollNo)
     if (search) {
@@ -194,8 +232,22 @@ const getAllUsers = async (req, res) => {
     // 3. Execute Query with Pagination
     const totalCount = await User.countDocuments(filter);
     const users = await User.find(filter)
-      .populate('classId', 'className year section')
-      .populate('assignedClasses', 'className year section')
+      .populate({
+        path: 'classId',
+        select: 'className year sections departmentId',
+        populate: {
+          path: 'departmentId',
+          select: 'name code'
+        }
+      })
+      .populate({
+        path: 'assignedClasses',
+        select: 'className year sections departmentId',
+        populate: {
+          path: 'departmentId',
+          select: 'name code'
+        }
+      })
       .select('-password')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -224,7 +276,7 @@ const getAllUsers = async (req, res) => {
 const updateUser = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, department, classId, rollNo, admissionYear, currentYear, subjects } = req.body;
+    const { name, email, department, classId, section, rollNo, admissionYear, currentYear, subjects } = req.body;
     const updateData = { 
       name, 
       email, 
@@ -239,6 +291,9 @@ const updateUser = asyncHandler(async (req, res) => {
     }
 
     if (userToUpdate.role === 'student') {
+      if (section !== undefined) {
+        updateData.section = section.toUpperCase().trim();
+      }
       updateData.studentDetails = { 
         rollNo: rollNo !== undefined ? rollNo : userToUpdate.studentDetails?.rollNo, 
         admissionYear: admissionYear !== undefined ? (Number(admissionYear) || userToUpdate.studentDetails?.admissionYear) : userToUpdate.studentDetails?.admissionYear,
@@ -444,7 +499,7 @@ const getStudentsByClass = asyncHandler(async (req, res) => {
     .select('name email studentDetails classId')
     .populate({
       path: 'classId',
-      select: 'className year section departmentId',
+      select: 'className year sections departmentId',
       populate: {
         path: 'departmentId',
         select: 'name code'

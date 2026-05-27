@@ -5,31 +5,32 @@ const Class = require('../models/Class');
 // @access  Private/Admin
 const createClass = async (req, res) => {
   try {
-    const { className, departmentId, year, section } = req.body;
+    const { className, departmentId, year, sections } = req.body;
 
     // 1. Validation (Backend)
-    if (!className || !departmentId || !year || !section) {
-      return res.status(400).json({ message: 'All fields are required' });
+    if (!className || !departmentId || !year || !sections || !Array.isArray(sections)) {
+      return res.status(400).json({ message: 'Class name, department, year, and sections are required' });
     }
 
-    // 2. Prevent Duplicate Classes (Same name, department, year, and section)
+    // 2. Prevent Duplicate Classes (Same name, department, and year)
     const existingClass = await Class.findOne({
       className,
       departmentId,
-      year,
-      section
+      year
     });
 
     if (existingClass) {
       return res.status(400).json({ message: 'Class already exists' });
     }
 
+    const sectionObjects = sections.map(name => ({ name: name.toUpperCase().trim() }));
+
     // 3. Create Class
     const newClass = await Class.create({
       className,
       departmentId,
       year,
-      section
+      sections: sectionObjects
     });
 
     res.status(201).json({
@@ -52,7 +53,7 @@ const getAllClasses = async (req, res) => {
 
     const classes = await Class.find(filter)
       .populate('departmentId', 'name code')
-      .sort({ createdAt: -1 });
+      .sort({ className: 1 });
 
     res.status(200).json({ 
       success: true,
@@ -72,12 +73,18 @@ const getAllClasses = async (req, res) => {
 // @access  Private/Admin
 const updateClass = async (req, res) => {
   try {
-    const { className, departmentId, year, section } = req.body;
+    const { className, departmentId, year, sections } = req.body;
     const { id } = req.params;
+
+    if (!className || !departmentId || !year || !sections || !Array.isArray(sections)) {
+      return res.status(400).json({ message: 'Class name, department, year, and sections are required' });
+    }
+
+    const sectionObjects = sections.map(name => ({ name: name.toUpperCase().trim() }));
 
     const updatedClass = await Class.findByIdAndUpdate(
       id,
-      { className, departmentId, year, section },
+      { className, departmentId, year, sections: sectionObjects },
       { new: true, runValidators: true }
     ).populate('departmentId', 'name code');
 

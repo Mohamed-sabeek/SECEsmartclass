@@ -1,5 +1,5 @@
 import { Menu, Transition } from "@headlessui/react";
-import { Fragment } from "react";
+import { Fragment, useRef, useState } from "react";
 import { ChevronDown, Check } from "lucide-react";
 
 export default function Dropdown({
@@ -9,9 +9,21 @@ export default function Dropdown({
   placeholder = "Select",
   className = "",
   buttonClassName = "",
+  disabled = false,
 }) {
-  // Find the label for the current value if options is an array of objects
-  const selectedOption = options.find(opt => {
+  const buttonRef = useRef(null);
+  const [openUpward, setOpenUpward] = useState(false);
+
+  // Measure space below the button each time the menu is about to open
+  const handleButtonClick = () => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    // Dropdown max-h is 240px (max-h-60) + some padding
+    setOpenUpward(spaceBelow < 260);
+  };
+
+  const selectedOption = options?.find(opt => {
     const val = typeof opt === "string" ? opt : opt.value;
     return val === value;
   });
@@ -22,7 +34,12 @@ export default function Dropdown({
 
   return (
     <Menu as="div" className={`relative inline-block ${className}`}>
-      <Menu.Button className={`w-full flex items-center justify-between px-6 py-3 rounded-full border border-[#FFD700] bg-white text-sm font-black text-[#1A1A1A] uppercase tracking-widest hover:shadow-lg transition-all active:scale-95 ${buttonClassName}`}>
+      <Menu.Button
+        ref={buttonRef}
+        onClick={handleButtonClick}
+        disabled={disabled}
+        className={`w-full flex items-center justify-between px-6 py-3 rounded-full border border-[#FFD700] bg-white text-sm font-black text-[#1A1A1A] uppercase tracking-widest hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${buttonClassName}`}
+      >
         <span className="truncate mr-2">
           {displayLabel}
         </span>
@@ -38,9 +55,15 @@ export default function Dropdown({
         leaveFrom="transform opacity-100 scale-100"
         leaveTo="transform opacity-0 scale-95"
       >
-        <Menu.Items className="absolute left-0 mt-2 w-full origin-top-left rounded-2xl bg-white shadow-2xl border border-gray-100 z-[100] focus:outline-none ring-1 ring-black ring-opacity-5">
+        <Menu.Items
+          className={`absolute left-0 w-full rounded-2xl bg-white shadow-2xl border border-gray-100 z-[200] focus:outline-none ring-1 ring-black ring-opacity-5 ${
+            openUpward
+              ? "bottom-full mb-2 origin-bottom-left"
+              : "top-full mt-2 origin-top-left"
+          }`}
+        >
           <div className="py-2 max-h-60 overflow-auto custom-scrollbar">
-            {options.map((option, idx) => {
+            {(options || []).map((option, idx) => {
               const label =
                 typeof option === "string" ? option : option.label;
               const val =

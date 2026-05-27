@@ -16,7 +16,7 @@ const exceljs = require('exceljs');
 // @access Private (Teacher)
 const startSession = asyncHandler(async (req, res) => {
   try {
-    const { classId, subject } = req.body;
+    const { classId, subject, section } = req.body;
 
     if (!classId) {
       return res.status(400).json({ success: false, message: 'Class ID is required' });
@@ -64,9 +64,15 @@ const startSession = asyncHandler(async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid subject selection for this faculty' });
     }
 
+    // Normalize section: 'none'/'NONE' means the class has no sections — store as undefined
+    const normalizedSection = (section && section.toLowerCase() !== 'none')
+      ? section.toUpperCase().trim()
+      : undefined;
+
     const session = await Session.create({
       teacherId: req.user.id,
       classId,
+      section: normalizedSection,
       subject: subject,
       startTime: new Date(),
       status: 'LIVE',
@@ -77,10 +83,15 @@ const startSession = asyncHandler(async (req, res) => {
     // Send email notifications to students (Async/Non-blocking)
     const sendNotifications = async () => {
       try {
-        const students = await User.find({ 
+        const studentFilter = { 
           role: 'student', 
           classId: classId 
-        }).select('email name');
+        };
+        if (section && section !== 'ALL') {
+          studentFilter.section = section.toUpperCase().trim();
+        }
+
+        const students = await User.find(studentFilter).select('email name');
 
         if (students.length === 0) {
           return;
@@ -169,10 +180,6 @@ const endSession = asyncHandler(async (req, res) => {
       const studentEngagement = await Engagement.findOne({ sessionId: session._id, studentId: studentEntry.studentId });
       const tabSwitchCount = studentEngagement ? studentEngagement.tabSwitchCount : 0;
 
-      console.log(`\n[DEBUG] Finalizing attendance for student: ${studentEntry.studentId}`);
-      console.log(`[DEBUG] Raw Logs:`, JSON.stringify(studentEntry.logs, null, 2));
-      console.log(`[DEBUG] Tab Switches:`, tabSwitchCount);
-
       const validLogs = studentEntry.logs.filter(log => {
         if (!log.joinTime || !log.leaveTime) return false;
         const join = new Date(log.joinTime);
@@ -192,8 +199,6 @@ const endSession = asyncHandler(async (req, res) => {
       const durationStr = totalAttendedSeconds > 0 
         ? (attMins > 0 ? `${attMins} mins ${attSecs} secs` : `${attSecs} secs`)
         : '0 secs';
-
-      console.log(`[DEBUG] Summary -> Duration: ${durationStr}, Percentage: ${percentage}%, Status: ${finalStatus}\n`);
 
       await Attendance.findOneAndUpdate(
         { sessionId: session._id, studentId: studentEntry.studentId },
@@ -301,8 +306,13 @@ const getActiveSession = asyncHandler(async (req, res) => {
 
       const session = await Session.findOne({
         classId: user.classId,
+        $or: [
+          { section: user.section },
+          { section: { $exists: false } },
+          { section: 'ALL' }
+        ],
         status: 'LIVE'
-      }).populate('classId', 'className year section')
+      }).populate('classId', 'className year sections')
         .populate('teacherId', 'name');
 
       if (session) {
@@ -389,6 +399,20 @@ const joinSession = asyncHandler(async (req, res) => {
 
     if (!session || session.status !== 'LIVE') {
       return res.status(404).json({ success: false, message: 'Active LIVE session not found' });
+    }
+
+    // 2. Validate student class and section membership
+    const student = await User.findById(studentId);
+    if (!student || student.role !== 'student') {
+      return res.status(400).json({ success: false, message: 'Only students can join sessions' });
+    }
+
+    if (session.classId.toString() !== student.classId.toString()) {
+      return res.status(403).json({ success: false, message: 'You are not a member of the class hosting this session' });
+    }
+
+    if (session.section && session.section !== 'ALL' && session.section.toUpperCase() !== student.section.toUpperCase()) {
+      return res.status(403).json({ success: false, message: `This session is restricted to Section ${session.section}` });
     }
 
     // 4. Update session tracking (multi-log support)
@@ -890,7 +914,7 @@ const exportSessionReportPDF = asyncHandler(async (req, res) => {
 // @access Private (Teacher)
 const scheduleSession = asyncHandler(async (req, res) => {
   try {
-    const { classId, subject, scheduledDate, startTime, endTime } = req.body;
+    const { classId, subject, scheduledDate, startTime, endTime, section } = req.body;
 
     if (!classId || !subject || !scheduledDate || !startTime || !endTime) {
       return res.status(400).json({ success: false, message: 'All fields are required' });
@@ -903,6 +927,11 @@ const scheduleSession = asyncHandler(async (req, res) => {
     const conflictingSession = await ScheduledSession.findOne({
       class: classId,
       scheduledDate: targetDate,
+      $or: [
+        { section: section ? section.toUpperCase().trim() : undefined },
+        { section: { $exists: false } },
+        { section: 'ALL' }
+      ],
       $and: [
         { startTime: { $lt: endTime } },
         { endTime: { $gt: startTime } }
@@ -927,6 +956,7 @@ const scheduleSession = asyncHandler(async (req, res) => {
     const scheduledSession = await ScheduledSession.create({
       teacher: req.user.id,
       class: classId,
+      section: section ? section.toUpperCase().trim() : undefined,
       subject,
       scheduledDate: new Date(scheduledDate),
       startTime,
@@ -935,15 +965,20 @@ const scheduleSession = asyncHandler(async (req, res) => {
 
     const populatedSession = await ScheduledSession.findById(scheduledSession._id)
       .populate('teacher', 'name')
-      .populate('class', 'className section');
+      .populate('class', 'className sections');
 
     // Send email notifications to students
     const sendNotifications = async () => {
       try {
-        const students = await User.find({ 
+        const studentFilter = { 
           role: 'student', 
           classId: classId 
-        }).select('email name');
+        };
+        if (section && section !== 'ALL') {
+          studentFilter.section = section.toUpperCase().trim();
+        }
+
+        const students = await User.find(studentFilter).select('email name');
 
         if (students.length === 0) return;
 
@@ -966,7 +1001,7 @@ const scheduleSession = asyncHandler(async (req, res) => {
               html: sessionScheduledTemplate({
                 subject,
                 teacherName: populatedSession.teacher.name,
-                className: `${populatedSession.class.className} (${populatedSession.class.section})`,
+                className: `${populatedSession.class.className} ${section ? `(Section ${section})` : ''}`,
                 scheduledDate: new Date(scheduledDate).toLocaleDateString('en-US', {
                   weekday: 'long',
                   year: 'numeric',
@@ -1016,6 +1051,11 @@ const getUpcomingScheduledSessions = asyncHandler(async (req, res) => {
         return res.status(200).json({ success: true, data: [] });
       }
       query.class = user.classId;
+      query.$or = [
+        { section: user.section },
+        { section: { $exists: false } },
+        { section: 'ALL' }
+      ];
     } else if (req.user.role === 'teacher') {
       query.teacher = req.user.id;
     }

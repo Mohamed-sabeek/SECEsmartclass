@@ -62,6 +62,7 @@ uploads/
 # Test and Scratch files
 server/test_*.js
 server/src/scratch/
+server/scratch/
 coverage/
 .nyc_output/
 

@@ -331,15 +331,15 @@ const AdminTeachers = () => {
                               <span 
                                 key={cls._id} 
                                 className="px-2 py-0.5 bg-yellow-50 border border-yellow-200 text-[#1A1A1A] rounded-lg font-bold text-[10px] whitespace-nowrap"
-                                title={`Year ${cls.year} — ${cls.className} (${cls.section})`}
+                                title={`Year ${cls.year} — ${cls.className}${cls.sections?.length > 0 ? ` (${cls.sections.map(s => s.name).join(', ')})` : ''}`}
                               >
-                                {cls.className} ({cls.section})
+                                {cls.className}{cls.sections?.length > 0 && ` (${cls.sections.map(s => s.name).join(', ')})`}
                               </span>
                             ))}
                             {teacher.assignedClasses.length > 2 && (
                               <span 
                                 className="px-2 py-0.5 bg-[#1A1A1A] text-[#FFD700] rounded-lg font-black text-[9px] cursor-help"
-                                title={teacher.assignedClasses.slice(2).map(c => `${c.className} (${c.section})`).join(', ')}
+                                title={teacher.assignedClasses.slice(2).map(c => `${c.className}${c.sections?.length > 0 ? ` (${c.sections.map(s => s.name).join(', ')})` : ''}`).join(', ')}
                               >
                                 +{teacher.assignedClasses.length - 2} more
                               </span>

@@ -19,7 +19,7 @@ const classValidation = [
   body('className').notEmpty().withMessage('Class name is required'),
   body('departmentId').isMongoId().withMessage('Valid Department ID is required'),
   body('year').isInt({ min: 1, max: 4 }).withMessage('Year must be between 1 and 4'),
-  body('section').notEmpty().withMessage('Section is required'),
+  body('sections').optional().isArray().withMessage('Sections must be an array'),
   validate
 ];
 

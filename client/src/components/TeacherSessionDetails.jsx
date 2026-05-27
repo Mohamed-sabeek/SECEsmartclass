@@ -169,7 +169,7 @@ const TeacherSessionDetails = () => {
                 {session.classId?.className}
               </h1>
               <p className="text-gray-400 font-bold uppercase tracking-widest text-xs italic">
-                {session.classId?.year} Year — Section {session.classId?.section}
+                {session.classId?.year} Year — Section {session.section || 'All'}
               </p>
             </div>
 

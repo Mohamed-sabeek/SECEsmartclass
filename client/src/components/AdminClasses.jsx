@@ -16,6 +16,7 @@ const AdminClasses = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({ departmentId: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newSection, setNewSection] = useState('');
   
   const debouncedSearch = useDebounce(searchTerm, 500);
   
@@ -23,7 +24,7 @@ const AdminClasses = () => {
     className: '',
     departmentId: '',
     year: '',
-    section: ''
+    sections: []
   });
 
   useEffect(() => {
@@ -69,11 +70,12 @@ const AdminClasses = () => {
   const handleAdd = () => {
     setModalMode('add');
     setSelectedId(null);
+    setNewSection('');
     setFormData({
       className: '',
       departmentId: '',
       year: '',
-      section: ''
+      sections: []
     });
     setShowModal(true);
   };
@@ -81,11 +83,22 @@ const AdminClasses = () => {
   const handleEdit = (cls) => {
     setModalMode('edit');
     setSelectedId(cls._id);
+    setNewSection('');
+
+    // Safely derive sections: prefer sections array, fall back to legacy section string
+    let sectionList = [];
+    if (cls.sections && cls.sections.length > 0) {
+      sectionList = cls.sections.map(s => (typeof s === 'string' ? s : s.name)).filter(Boolean);
+    } else if (cls.section) {
+      // Legacy fallback: old single-section string
+      sectionList = [cls.section.toUpperCase()];
+    }
+
     setFormData({
       className: cls.className,
       departmentId: cls.departmentId?._id || '',
       year: cls.year,
-      section: cls.section
+      sections: sectionList
     });
     setShowModal(true);
   };
@@ -106,19 +119,42 @@ const AdminClasses = () => {
     }
   };
 
+  const addSectionTag = () => {
+    const clean = newSection.trim().toUpperCase();
+    if (!clean) return;
+    if (formData.sections.includes(clean)) {
+      toast.error('Section already added');
+      return;
+    }
+    setFormData({
+      ...formData,
+      sections: [...formData.sections, clean]
+    });
+    setNewSection('');
+  };
+
+  const removeSectionTag = (sec) => {
+    setFormData({
+      ...formData,
+      sections: formData.sections.filter(s => s !== sec)
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
+
+    // Validate BEFORE setting isSubmitting so the button never gets stuck
+    if (!formData.className || !formData.departmentId || !formData.year) {
+      toast.error('All fields are required');
+      return;
+    }
+    // Sections are optional — a class can have none (assigned later)
 
     try {
       setIsSubmitting(true);
       setError('');
       const token = localStorage.getItem('token');
-      
-      if (!formData.className || !formData.departmentId || !formData.year || !formData.section) {
-        toast.error('All fields are required');
-        return;
-      }
 
       if (modalMode === 'add') {
         await axios.post('/api/classes', formData, {
@@ -132,7 +168,7 @@ const AdminClasses = () => {
         toast.success('Class updated successfully!');
       }
 
-      setFormData({ className: '', departmentId: '', year: '', section: '' });
+      setFormData({ className: '', departmentId: '', year: '', sections: [] });
       setShowModal(false);
       fetchClasses();
     } catch (err) {
@@ -162,7 +198,7 @@ const AdminClasses = () => {
           <h2 className="text-3xl font-black text-[#1A1A1A] tracking-tight">
             Class <span className="text-[#FFD700]">Management</span>
           </h2>
-          <p className="text-gray-500 mt-1 text-sm font-medium italic">Create academic batches and assign departments</p>
+          <p className="text-gray-500 mt-1 text-sm font-medium italic">Create academic classes and manage dynamic sections</p>
         </div>
         <button
           onClick={handleAdd}
@@ -217,7 +253,7 @@ const AdminClasses = () => {
                   <th className="px-10 py-6 text-left text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Class Identity</th>
                   <th className="px-10 py-6 text-left text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Department</th>
                   <th className="px-10 py-6 text-left text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Level / Year</th>
-                  <th className="px-10 py-6 text-left text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Section</th>
+                  <th className="px-10 py-6 text-left text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Sections</th>
                   <th className="px-10 py-6 text-center text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Actions</th>
                 </tr>
               </thead>
@@ -238,7 +274,7 @@ const AdminClasses = () => {
                         <div className="h-4 w-20 bg-gray-200 rounded-lg"></div>
                       </td>
                       <td className="px-10 py-5">
-                        <div className="h-4 w-12 bg-gray-200 rounded-lg"></div>
+                        <div className="h-4 w-24 bg-gray-200 rounded-lg"></div>
                       </td>
                       <td className="px-10 py-5">
                         <div className="h-8 w-20 bg-gray-200 rounded-lg mx-auto"></div>
@@ -271,13 +307,19 @@ const AdminClasses = () => {
                       Year <span className="text-[#1A1A1A]">{cls.year}</span>
                     </td>
                     <td className="px-10 py-5">
-                      <div className="flex flex-col group-hover:translate-x-1 transition-transform">
-                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Unit Section</span>
-                        <div className="flex items-center">
-                          <span className="w-7 h-7 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center text-[#1A1A1A] font-black text-xs shadow-sm group-hover:border-[#FFD700] group-hover:bg-white transition-all">
-                            {cls.section}
-                          </span>
-                        </div>
+                      <div className="flex flex-wrap gap-1.5 items-center">
+                        {cls.sections && cls.sections.length > 0 ? (
+                          cls.sections.map((sec) => (
+                            <span
+                              key={sec._id || sec.name}
+                              className="px-2.5 py-1 bg-yellow-50 border border-[#FFD700]/30 text-[#1A1A1A] font-black text-xs rounded-lg shadow-sm"
+                            >
+                              {sec.name}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-gray-400 italic text-xs">No sections</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-10 py-5">
@@ -334,7 +376,7 @@ const AdminClasses = () => {
                   value={formData.className}
                   onChange={handleChange}
                   className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl focus:ring-4 focus:ring-yellow-500/20 focus:bg-white transition-all text-gray-800 font-bold text-lg"
-                  placeholder="e.g. 2nd IT-A"
+                  placeholder="e.g. 2nd IT"
                   required
                 />
               </div>
@@ -351,7 +393,7 @@ const AdminClasses = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Academic Year</label>
                   <input
@@ -366,17 +408,68 @@ const AdminClasses = () => {
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Section</label>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Configure Sections <span className="text-gray-400 font-medium text-xs">(optional)</span></label>
+                <div className="flex flex-wrap gap-2 mb-3 min-h-[50px] p-3 bg-gray-50 rounded-2xl border-none">
+                  {formData.sections.length === 0 ? (
+                    <span className="text-gray-400 font-bold text-sm italic self-center pl-2">No sections — you can add them later.</span>
+                  ) : (
+                    formData.sections.map((sec) => (
+                      <span
+                        key={sec}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-black text-xs shadow-md animate-in zoom-in-75 duration-200 ${
+                          sec === 'NONE'
+                            ? 'bg-gray-200 text-gray-500'
+                            : 'bg-[#1A1A1A] text-[#FFD700]'
+                        }`}
+                      >
+                        {sec}
+                        <button
+                          type="button"
+                          onClick={() => removeSectionTag(sec)}
+                          className="hover:bg-red-500/20 hover:text-red-500 p-0.5 rounded-lg transition-colors"
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ))
+                  )}
+                </div>
+                <div className="flex gap-2">
                   <input
                     type="text"
-                    name="section"
-                    value={formData.section}
-                    onChange={handleChange}
-                    className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl focus:ring-4 focus:ring-yellow-500/20 focus:bg-white transition-all text-gray-800 font-bold text-lg"
-                    placeholder="e.g. A"
-                    required
+                    value={newSection}
+                    onChange={(e) => setNewSection(e.target.value)}
+                    placeholder="e.g. A, B, C"
+                    className="flex-1 px-6 py-3 bg-gray-50 border-none rounded-xl focus:ring-4 focus:ring-yellow-500/20 focus:bg-white transition-all text-gray-800 font-bold"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addSectionTag();
+                      }
+                    }}
                   />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Quick-add "NONE" — clears all other sections
+                      setFormData({ ...formData, sections: ['NONE'] });
+                      setNewSection('');
+                    }}
+                    title="Mark class as having no sections"
+                    className="px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 rounded-xl transition-all font-black text-xs shadow-sm border border-gray-200"
+                  >
+                    None
+                  </button>
+                  <button
+                    type="button"
+                    onClick={addSectionTag}
+                    className="px-6 py-3 bg-[#1A1A1A] hover:bg-[#FFD700] text-white hover:text-[#1A1A1A] rounded-xl transition-all font-bold text-sm shadow-md"
+                  >
+                    Add
+                  </button>
                 </div>
               </div>
 

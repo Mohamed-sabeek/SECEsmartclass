@@ -37,6 +37,7 @@ const AdminStudents = () => {
     email: '',
     rollNo: '',
     classId: '',
+    section: '',
     admissionYear: '',
     currentYear: ''
   });
@@ -109,6 +110,7 @@ const AdminStudents = () => {
       email: student.email,
       rollNo: student.studentDetails?.rollNo || '',
       classId: student.classId?._id || student.classId || '',
+      section: student.section || '',
       admissionYear: student.studentDetails?.admissionYear || '',
       currentYear: student.studentDetails?.currentYear ? String(student.studentDetails.currentYear) : ''
     });
@@ -142,6 +144,10 @@ const AdminStudents = () => {
         toast.error('Please select a class for assignment');
         return;
       }
+      if (!formData.section) {
+        toast.error('Please select a section');
+        return;
+      }
 
       const token = localStorage.getItem('token');
       const payload = {
@@ -163,9 +169,11 @@ const AdminStudents = () => {
         toast.success('Student record updated successfully!');
       }
 
-      setFormData({ name: '', email: '', rollNo: '', classId: '', admissionYear: '', currentYear: '' });
+      setFormData({ name: '', email: '', rollNo: '', classId: '', section: '', admissionYear: '', currentYear: '' });
       setShowModal(false);
-      fetchStudents(1);
+      // On add → go to page 1 so the new student is visible.
+      // On edit → stay on the current page so the user isn't jumped back.
+      fetchStudents(modalMode === 'add' ? 1 : pagination.page);
     } catch (err) {
       console.error('Error enrolling student:', err);
       toast.error(err.response?.data?.message || 'Failed to enroll student');
@@ -239,7 +247,7 @@ const AdminStudents = () => {
           <button
             onClick={() => {
               setModalMode('add');
-              setFormData({ name: '', email: '', rollNo: '', classId: '', admissionYear: '', currentYear: '' });
+              setFormData({ name: '', email: '', rollNo: '', classId: '', section: '', admissionYear: '', currentYear: '' });
               setShowModal(true);
             }}
             className="group flex items-center bg-[#FFD700] hover:bg-[#FFED4E] text-[#1A1A1A] px-6 py-3 rounded-xl transition-all duration-300 shadow-lg shadow-yellow-500/20 font-bold active:scale-95 text-sm"
@@ -370,7 +378,7 @@ const AdminStudents = () => {
                         <LayoutGrid size={16} className="text-[#FFD700] mr-2.5" />
                         <span className="text-[#1A1A1A] font-bold text-sm">
                           {student.classId ? 
-                            `${student.classId.className} (S-${student.classId.section})` : 
+                            `${student.classId.className} (S-${student.section || '?'})` : 
                             'Unassigned'
                           }
                         </span>
@@ -518,19 +526,39 @@ const AdminStudents = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1 text-[#FFD700]">Official Class Assignment</label>
-                <Dropdown
-                  value={formData.classId}
-                  onChange={(val) => setFormData({...formData, classId: val})}
-                  options={classes.map(cls => ({
-                    label: `${cls.className} (${cls.section})`,
-                    value: cls._id
-                  }))}
-                  placeholder="Choose a Class"
-                  className="w-full"
-                  buttonClassName="!rounded-xl !py-4 !bg-gray-50/50 !border-gray-200 !font-black !text-lg"
-                />
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1 text-[#FFD700]">Official Class Assignment</label>
+                  <Dropdown
+                    value={formData.classId}
+                    onChange={(val) => {
+                      setFormData({...formData, classId: val, section: ''});
+                    }}
+                    options={classes.map(cls => ({
+                      label: `${cls.className}`,
+                      value: cls._id
+                    }))}
+                    placeholder="Choose a Class"
+                    className="w-full"
+                    buttonClassName="!rounded-xl !py-4 !bg-gray-50/50 !border-gray-200 !font-black !text-lg"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1 text-[#FFD700]">Section Assignment</label>
+                  <Dropdown
+                    value={formData.section}
+                    onChange={(val) => setFormData({...formData, section: val})}
+                    options={
+                      formData.classId && classes.find(c => c._id === formData.classId)?.sections
+                        ? classes.find(c => c._id === formData.classId).sections.map(s => ({ label: `Section ${s.name}`, value: s.name }))
+                        : []
+                    }
+                    placeholder={formData.classId ? "Select Section" : "Choose Class First"}
+                    className="w-full"
+                    disabled={!formData.classId}
+                    buttonClassName="!rounded-xl !py-4 !bg-gray-50/50 !border-gray-200 !font-black !text-lg"
+                  />
+                </div>
               </div>
 
               <div className="pt-6">

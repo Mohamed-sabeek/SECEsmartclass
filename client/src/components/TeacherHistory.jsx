@@ -126,7 +126,7 @@ const TeacherHistory = ({ teacher }) => {
           options={[
             { label: 'All Classes', value: '' },
             ...(teacher?.assignedClasses?.map(cls => ({
-              label: `${cls.className} (${cls.section})`,
+              label: `${cls.className}${cls.sections?.length > 0 ? ` (${cls.sections.map(s => s.name).join(', ')})` : ''}`,
               value: cls._id
             })) || [])
           ]}
@@ -294,7 +294,7 @@ const TeacherHistory = ({ teacher }) => {
                         <div>
                           <p className="text-sm font-black text-gray-800 uppercase tracking-tight">{session.classId?.className || 'Deleted Class'}</p>
                           <div className="flex items-center space-x-2 mt-1">
-                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{session.classId?.year} Year — {session.classId?.section}</span>
+                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{session.classId?.year} Year — Section {session.section || 'All'}</span>
                              <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
                              <span className="text-[10px] font-black text-[#FFD700] uppercase italic">{session.subject}</span>
                           </div>

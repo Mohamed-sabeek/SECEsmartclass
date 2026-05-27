@@ -16,12 +16,16 @@ const classSchema = new mongoose.Schema(
       type: Number,
       required: true
     },
-    section: {
-      type: String,
-      required: true,
-      uppercase: true,
-      trim: true
-    },
+    sections: [
+      {
+        name: {
+          type: String,
+          required: true,
+          uppercase: true,
+          trim: true
+        }
+      }
+    ],
     createdAt: {
       type: Date,
       default: Date.now
@@ -31,6 +35,6 @@ const classSchema = new mongoose.Schema(
 );
 
 classSchema.index({ departmentId: 1 });
-classSchema.index({ year: 1, section: 1 });
+classSchema.index({ year: 1 });
 
 module.exports = mongoose.model('Class', classSchema);

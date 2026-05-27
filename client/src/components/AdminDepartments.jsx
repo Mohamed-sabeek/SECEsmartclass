@@ -9,6 +9,9 @@ const AdminDepartments = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [departments, setDepartments] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [selectedClasses, setSelectedClasses] = useState([]);
+  const [classSearchTerm, setClassSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,6 +23,7 @@ const AdminDepartments = () => {
 
   useEffect(() => {
     fetchDepartments();
+    fetchClasses();
   }, []);
 
   const fetchDepartments = async () => {
@@ -46,10 +50,24 @@ const AdminDepartments = () => {
     }
   };
 
+  const fetchClasses = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('/api/classes', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setClasses(response.data.data || []);
+    } catch (err) {
+      console.error('Error fetching classes:', err);
+    }
+  };
+
   const handleAdd = () => {
     setModalMode('add');
     setSelectedItem(null);
     setFormData({ name: '', code: '', hod: '' });
+    setSelectedClasses([]);
+    setClassSearchTerm('');
     setShowModal(true);
   };
 
@@ -61,6 +79,8 @@ const AdminDepartments = () => {
       code: item.code,
       hod: item.hod
     });
+    setSelectedClasses((item.classes || []).map(c => c._id));
+    setClassSearchTerm('');
     setShowModal(true);
   };
 
@@ -84,22 +104,35 @@ const AdminDepartments = () => {
     e.preventDefault();
     if (isSubmitting) return;
 
+    if (!formData.name || !formData.code || !formData.hod) {
+      toast.error('All fields are required');
+      return;
+    }
+
+
+
     try {
       setIsSubmitting(true);
       const token = localStorage.getItem('token');
+      const payload = {
+        ...formData,
+        classIds: selectedClasses
+      };
+
       if (modalMode === 'add') {
-        await axios.post('/api/departments', formData, {
+        await axios.post('/api/departments', payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.success('Department created successfully!');
       } else {
-        await axios.put(`/api/departments/${selectedItem._id}`, formData, {
+        await axios.put(`/api/departments/${selectedItem._id}`, payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.success('Department updated successfully!');
       }
       setShowModal(false);
       fetchDepartments();
+      fetchClasses(); // Refresh class assignments in list
     } catch (error) {
       console.error('Error saving department:', error);
       toast.error(error.response?.data?.message || 'Failed to save department');
@@ -176,6 +209,7 @@ const AdminDepartments = () => {
                   <th className="px-4 sm:px-10 py-4 sm:py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Department Unit</th>
                   <th className="px-4 sm:px-10 py-4 sm:py-6 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Identifier</th>
                   <th className="px-4 sm:px-10 py-4 sm:py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Head Admin</th>
+                  <th className="px-4 sm:px-10 py-4 sm:py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Academic Scope</th>
                   <th className="px-4 sm:px-10 py-4 sm:py-6 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">Actions</th>
                 </tr>
               </thead>
@@ -185,7 +219,7 @@ const AdminDepartments = () => {
                     <tr key={i} className="animate-pulse">
                       <td className="px-4 sm:px-10 py-4 sm:py-5">
                         <div className="flex items-center">
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gray-105 mr-3 sm:mr-4 shrink-0"></div>
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gray-100 mr-3 sm:mr-4 shrink-0"></div>
                           <div className="h-4 w-32 bg-gray-200 rounded-lg"></div>
                         </div>
                       </td>
@@ -194,6 +228,12 @@ const AdminDepartments = () => {
                       </td>
                       <td className="px-4 sm:px-10 py-4 sm:py-5">
                         <div className="h-4 w-24 bg-gray-200 rounded-lg"></div>
+                      </td>
+                      <td className="px-4 sm:px-10 py-4 sm:py-5">
+                        <div className="space-y-2">
+                          <div className="h-3 w-32 bg-gray-200 rounded-md"></div>
+                          <div className="h-3 w-20 bg-gray-100 rounded-md"></div>
+                        </div>
                       </td>
                       <td className="px-10 py-5">
                         <div className="h-8 w-20 bg-gray-200 rounded-lg mx-auto"></div>
@@ -208,15 +248,39 @@ const AdminDepartments = () => {
                         <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-[#1A1A1A] flex items-center justify-center text-[#FFD700] font-black text-[10px] sm:text-sm mr-3 sm:mr-4 shadow-lg group-hover:rotate-6 transition-transform shrink-0">
                           {dept.name.charAt(0)}
                         </div>
-                        <span className="text-xs sm:text-base font-black text-[#1A1A1A] leading-tight">{dept.name}</span>
+                        <div>
+                          <span className="text-xs sm:text-base font-black text-[#1A1A1A] leading-tight block">{dept.name}</span>
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {(dept.classes || []).map(cls => (
+                              <span key={cls._id} className="px-2 py-0.5 bg-yellow-50 text-[#FFD700] rounded-md text-[9px] font-black border border-[#FFD700]/20 uppercase tracking-tight">
+                                {cls.className}
+                                {cls.sections && cls.sections.length > 0 && (
+                                  <span className="ml-1 text-gray-500">
+                                    ({cls.sections.map(s => s.name).join(', ')})
+                                  </span>
+                                )}
+                              </span>
+                            ))}
+                            {(dept.classes || []).length === 0 && (
+                              <span className="text-[10px] text-gray-400 font-medium italic">No classes assigned</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 sm:px-10 py-4 sm:py-5 text-center">
-                      <span className="px-3 py-1 bg-white border border-gray-100 text-gray-800 rounded-lg font-black text-[10px] shadow-sm group-hover:border-[#FFD700] transition-colors">
+                      <span className="px-3 py-1 bg-white border border-gray-100 text-gray-800 rounded-lg font-black text-[10px] shadow-sm group-hover:border-[#FFD700] transition-colors uppercase tracking-widest">
                         {dept.code}
                       </span>
                     </td>
                     <td className="px-4 sm:px-10 py-4 sm:py-5 text-gray-600 font-bold text-[10px] sm:text-sm">{dept.hod}</td>
+                    <td className="px-4 sm:px-10 py-4 sm:py-5 text-left">
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-500 font-bold">Classes: <span className="font-black text-gray-800">{dept.classesCount || 0}</span></p>
+                        <p className="text-xs text-gray-500 font-bold">Students: <span className="font-black text-gray-800">{dept.studentsCount || 0}</span></p>
+                        {dept.years && <p className="text-[10px] text-gray-400 italic font-medium">Years: {dept.years}</p>}
+                      </div>
+                    </td>
                     <td className="px-10 py-5">
                       <div className="flex items-center justify-center gap-2">
                         <button
@@ -244,7 +308,7 @@ const AdminDepartments = () => {
       {showModal && (
         <div className="fixed inset-0 bg-[#1A1A1A]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full p-10 transform transition-all animate-in zoom-in-95 duration-500 relative">
-            <div className="flex justify-between items-center mb-10">
+            <div className="flex justify-between items-center mb-8">
               <div>
                 <h3 className="text-3xl font-black text-[#1A1A1A] tracking-tight">
                   {modalMode === 'add' ? 'Setup Unit' : 'Modify Unit'}
@@ -259,7 +323,7 @@ const AdminDepartments = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Official Name</label>
                 <input
@@ -267,13 +331,13 @@ const AdminDepartments = () => {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD700] focus:border-[#FFD700] transition-all font-bold text-lg"
-                  placeholder="e.g. Mechanical Engineering"
+                  className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD700] focus:border-[#FFD700] transition-all font-bold text-base"
+                  placeholder="e.g. Information Technology"
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Unit Code</label>
                   <input
@@ -281,8 +345,8 @@ const AdminDepartments = () => {
                     name="code"
                     value={formData.code}
                     onChange={handleChange}
-                    className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD700] focus:border-[#FFD700] transition-all font-black"
-                    placeholder="CSE"
+                    className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD700] focus:border-[#FFD700] transition-all font-black text-base"
+                    placeholder="IT"
                     required
                   />
                 </div>
@@ -293,25 +357,100 @@ const AdminDepartments = () => {
                     name="hod"
                     value={formData.hod}
                     onChange={handleChange}
-                    className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD700] focus:border-[#FFD700] transition-all font-bold"
+                    className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD700] focus:border-[#FFD700] transition-all font-bold text-base"
                     placeholder="Dr. Rajesh"
                     required
                   />
                 </div>
               </div>
 
-              <div className="flex gap-4 pt-10">
+              {/* Class Multi-select & Search */}
+              <div className="border border-gray-100 rounded-2xl p-4 bg-gray-50/50">
+                <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1 mb-2 block">
+                  Assign Classes ({selectedClasses.length} Selected)
+                </label>
+                
+                <div className="relative mb-3">
+                  <Search size={14} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={classSearchTerm}
+                    onChange={(e) => setClassSearchTerm(e.target.value)}
+                    placeholder="Search class by name or year..."
+                    className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD700]/10 focus:border-[#FFD700] text-xs font-bold"
+                  />
+                </div>
+
+                <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                  {classes
+                    .filter(c => 
+                      c.className.toLowerCase().includes(classSearchTerm.toLowerCase()) ||
+                      `${c.year}`.includes(classSearchTerm)
+                    )
+                    .map(cls => {
+                      const isChecked = selectedClasses.includes(cls._id);
+                      return (
+                        <label 
+                          key={cls._id} 
+                          className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                            isChecked 
+                              ? 'bg-white border-[#FFD700] text-[#1A1A1A] shadow-sm' 
+                              : 'bg-white/40 border-transparent hover:bg-white text-gray-700'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {
+                                if (isChecked) {
+                                  setSelectedClasses(selectedClasses.filter(id => id !== cls._id));
+                                } else {
+                                  setSelectedClasses([...selectedClasses, cls._id]);
+                                }
+                              }}
+                              className="w-4 h-4 rounded border-gray-300 text-[#FFD700] focus:ring-[#FFD700]"
+                            />
+                            <div>
+                              <p className="font-black text-xs">
+                                {cls.className}
+                                {cls.sections && cls.sections.length > 0 && (
+                                  <span className="ml-1 font-bold text-gray-500 text-[9px]">
+                                    ({cls.sections.map(s => s.name).join(', ')})
+                                  </span>
+                                )}
+                              </p>
+                              <p className="text-[9px] text-gray-400 uppercase font-black tracking-wider">
+                                Year {cls.year} — {cls.departmentId?.name || 'Unassigned'}
+                              </p>
+                            </div>
+                          </div>
+                          {isChecked && (
+                            <span className="text-[9px] bg-yellow-50 text-[#FFD700] px-2 py-0.5 rounded-md font-black border border-[#FFD700]/20 uppercase tracking-tight">
+                              Assigned
+                            </span>
+                          )}
+                        </label>
+                      );
+                    })}
+                  {classes.length === 0 && (
+                    <p className="text-xs text-gray-400 italic text-center py-4">No classes available. Create classes first.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-4 pt-4">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 px-8 py-5 bg-gray-50 text-gray-500 rounded-xl hover:bg-gray-100 transition-all font-bold text-lg active:scale-95"
+                  className="flex-1 px-6 py-4 bg-gray-50 text-gray-500 rounded-xl hover:bg-gray-100 transition-all font-bold text-base active:scale-95"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`flex-[2] px-8 py-5 bg-[#FFD700] text-[#1A1A1A] rounded-xl transition-all duration-300 font-black text-lg shadow-xl active:scale-95 ${
+                  className={`flex-[2] px-6 py-4 bg-[#FFD700] text-[#1A1A1A] rounded-xl transition-all duration-300 font-black text-base shadow-xl active:scale-95 ${
                     isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#FFED4E]'
                   }`}
                 >

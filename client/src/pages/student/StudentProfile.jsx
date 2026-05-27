@@ -275,7 +275,7 @@ const StudentProfile = () => {
               <div>
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Department</p>
                 <p className="text-2xl font-black text-[#1A1A1A] italic">
-                  {user.department || "N/A"}
+                  {user.classId?.departmentId?.name || user.department || "N/A"}
                 </p>
               </div>
             </div>

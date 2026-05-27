@@ -7,6 +7,12 @@ const mongoose = require('mongoose');
 // @desc Get student dashboard stats
 // @route GET /api/student/dashboard
 // @access Private (Student)
+// Helper: normalize section — null / undefined / empty / 'none' / 'NONE' all mean "no section"
+const normalizeSection = (s) => {
+  if (!s || s.trim().toLowerCase() === 'none') return null;
+  return s.toUpperCase().trim();
+};
+
 const getStudentDashboard = asyncHandler(async (req, res) => {
   try {
     const studentId = req.user.id;
@@ -19,13 +25,31 @@ const getStudentDashboard = asyncHandler(async (req, res) => {
       });
     }
 
-    // 1. Total sessions conducted for student's class
-    const totalClasses = await Session.countDocuments({ 
-      classId: student.classId
-    });
+    const studentSection = normalizeSection(student.section);
+
+    // Build Session query (matching class and section normalization)
+    const sessionQuery = { 
+      classId: student.classId,
+      status: 'ENDED' // Only count ended sessions
+    };
+
+    if (studentSection !== null) {
+      sessionQuery.$or = [
+        { section: studentSection },
+        { section: { $exists: false } },
+        { section: null },
+        { section: '' },
+        { section: 'none' },
+        { section: 'NONE' },
+        { section: 'ALL' }
+      ];
+    }
+
+    // 1. Total sessions conducted for student's class and section
+    const totalClasses = await Session.countDocuments(sessionQuery);
 
     // 2. Classes attended by the student
-    const sessionsOfClass = await Session.find({ classId: student.classId }).select('_id');
+    const sessionsOfClass = await Session.find(sessionQuery).select('_id');
     const sessionIds = sessionsOfClass.map(s => s._id);
 
     const attendedClasses = await Attendance.countDocuments({
@@ -56,18 +80,36 @@ const getStudentDashboard = asyncHandler(async (req, res) => {
 const getStudentAttendance = asyncHandler(async (req, res) => {
   try {
     const studentId = req.user.id;
-    const student = await User.findById(studentId).select('classId').lean();
+    const student = await User.findById(studentId).select('classId section').lean();
 
     if (!student || !student.classId) {
       return res.status(200).json({ success: true, data: { totalClasses: 0, presentCount: 0, absentCount: 0, percentage: 0 } });
     }
 
-    // Total sessions conducted for student's class
-    const totalClasses = await Session.countDocuments({ 
-      classId: student.classId
-    });
+    const studentSection = normalizeSection(student.section);
 
-    const sessionsOfClass = await Session.find({ classId: student.classId }).select('_id').lean();
+    // Build Session query (matching class and section normalization)
+    const sessionQuery = { 
+      classId: student.classId,
+      status: 'ENDED' // Only count ended sessions
+    };
+
+    if (studentSection !== null) {
+      sessionQuery.$or = [
+        { section: studentSection },
+        { section: { $exists: false } },
+        { section: null },
+        { section: '' },
+        { section: 'none' },
+        { section: 'NONE' },
+        { section: 'ALL' }
+      ];
+    }
+
+    // Total sessions conducted for student's class and section
+    const totalClasses = await Session.countDocuments(sessionQuery);
+
+    const sessionsOfClass = await Session.find(sessionQuery).select('_id').lean();
     const sessionIds = sessionsOfClass.map(s => s._id);
 
     const presentCount = await Attendance.countDocuments({
@@ -105,7 +147,7 @@ const getStudentHistory = asyncHandler(async (req, res) => {
     const limit = Number(req.query.limit) || 6;
     const skip = (page - 1) * limit;
 
-    const student = await User.findById(studentId).select('classId').lean();
+    const student = await User.findById(studentId).select('classId section').lean();
 
     if (!student || !student.classId) {
       return res.status(200).json({ 
@@ -129,8 +171,25 @@ const getStudentHistory = asyncHandler(async (req, res) => {
       attendanceRecords.map(a => [a.sessionId.toString(), a])
     );
 
-    // Build Session query
-    const sessionQuery = { classId: student.classId };
+    const studentSection = normalizeSection(student.section);
+
+    // Build Session query (matching class and section normalization)
+    const sessionQuery = { 
+      classId: student.classId,
+      status: 'ENDED' // Only count ended sessions in history
+    };
+
+    if (studentSection !== null) {
+      sessionQuery.$or = [
+        { section: studentSection },
+        { section: { $exists: false } },
+        { section: null },
+        { section: '' },
+        { section: 'none' },
+        { section: 'NONE' },
+        { section: 'ALL' }
+      ];
+    }
     
     // If status filter is active, only fetch sessions matching the status
     if (status && status !== 'All') {
@@ -149,11 +208,11 @@ const getStudentHistory = asyncHandler(async (req, res) => {
     const totalCount = await Session.countDocuments(sessionQuery);
     const totalPages = Math.ceil(totalCount / limit);
 
-    // Get all sessions for this student's class
+    // Get all sessions for this student's class and section
     const sessions = await Session.find(sessionQuery)
       .select('_id classId teacherId startTime endTime')
       .populate('teacherId', 'name')
-      .populate('classId', 'className section year')
+      .populate('classId', 'className year sections')
       .sort({ startTime: -1 })
       .skip(skip)
       .limit(limit)
@@ -211,7 +270,7 @@ const getStudentTeachers = asyncHandler(async (req, res) => {
     .select('name email avatar teacherDetails assignedClasses classAssignments')
     .populate({
       path: 'assignedClasses',
-      select: 'className departmentId section year',
+      select: 'className departmentId sections year',
       populate: {
         path: 'departmentId',
         select: 'name code'

@@ -1,10 +1,39 @@
 const Department = require('../models/Department');
 
-// Get all departments
+// Get all departments with dynamic analytics and assigned classes
 const getAllDepartments = async (req, res) => {
   try {
-    const departments = await Department.find().sort({ name: 1 });
-    res.status(200).json({ departments });
+    const departments = await Department.find().sort({ name: 1 }).lean();
+    const Class = require('../models/Class');
+    const User = require('../models/User');
+
+    const populatedDepts = await Promise.all(departments.map(async (dept) => {
+      // Find all classes assigned to this department
+      const classes = await Class.find({ departmentId: dept._id }).sort({ year: 1, className: 1 }).lean();
+      const classIds = classes.map(c => c._id);
+      
+      // Count total students in these classes
+      const studentsCount = await User.countDocuments({ role: 'student', classId: { $in: classIds } });
+      
+      // Get unique years
+      const yearsSet = new Set(classes.map(c => c.year));
+      const years = Array.from(yearsSet).sort().map(y => {
+        if (y === 1) return '1st';
+        if (y === 2) return '2nd';
+        if (y === 3) return '3rd';
+        return `${y}th`;
+      });
+
+      return {
+        ...dept,
+        classes,
+        classesCount: classes.length,
+        studentsCount,
+        years: years.join(', ')
+      };
+    }));
+
+    res.status(200).json({ departments: populatedDepts });
   } catch (error) {
     console.error('Error getting departments:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -25,7 +54,7 @@ const getDepartmentCount = async (req, res) => {
 // Add new department
 const addDepartment = async (req, res) => {
   try {
-    const { name, code, hod } = req.body;
+    const { name, code, hod, classIds } = req.body;
 
     if (!name || !code) {
       return res.status(400).json({ message: 'Name and code are required' });
@@ -45,6 +74,15 @@ const addDepartment = async (req, res) => {
 
     await newDepartment.save();
 
+    // Automatically update assigned classes' department reference
+    if (classIds && Array.isArray(classIds) && classIds.length > 0) {
+      const Class = require('../models/Class');
+      await Class.updateMany(
+        { _id: { $in: classIds } },
+        { departmentId: newDepartment._id }
+      );
+    }
+
     res.status(201).json({
       message: 'Department created successfully',
       department: newDepartment,
@@ -59,7 +97,7 @@ const addDepartment = async (req, res) => {
 const updateDepartment = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, code, hod } = req.body;
+    const { name, code, hod, classIds } = req.body;
 
     const department = await Department.findByIdAndUpdate(
       id,
@@ -69,6 +107,25 @@ const updateDepartment = async (req, res) => {
 
     if (!department) {
       return res.status(404).json({ message: 'Department not found' });
+    }
+
+    // Automatically update assigned classes' department reference
+    if (classIds && Array.isArray(classIds)) {
+      const Class = require('../models/Class');
+      
+      // First, unset departmentId for any classes previously assigned to this department but now removed
+      await Class.updateMany(
+        { departmentId: department._id, _id: { $nin: classIds } },
+        { $unset: { departmentId: "" } }
+      );
+      
+      // Then, update new classes to belong to this department
+      if (classIds.length > 0) {
+        await Class.updateMany(
+          { _id: { $in: classIds } },
+          { departmentId: department._id }
+        );
+      }
     }
 
     res.status(200).json({

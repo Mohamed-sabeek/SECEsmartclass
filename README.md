@@ -30,14 +30,19 @@ Integrates **Jitsi Meet API** for secure, high-fidelity video conferencing direc
 *   **Engagement Monitoring**: Tracks student tab visibility to provide insights into classroom participation.
 *   **Analytical Reporting**: Generates automated attendance percentages and historical trends for institutional audits.
 *   **Standardized Timezone Engine**: Enforces Indian Standard Time (IST - Asia/Kolkata) across all UI views and exports, eliminating UTC mismatches.
+*   **Consolidated Section Normalization Engine**: Intelligently handles unspecified (`NONE`/`null`/`empty`) sections across students and session registries, guaranteeing seamless class-wide broadcast delivery.
 *   **Premium Native Excel/PDF Exports**: One-click generation of beautifully formatted, autofitted Excel spreadsheets (via `exceljs`) and structured, high-fidelity PDF reports (via `pdfkit-table`) for institutional storage.
 
-### 4. Professional Design System
+### 4. Interactive Student Roster Search
+*   **Instant Search Pipeline**: Enables rapid filtering by student name or roll number with custom query highlighting.
+*   **Clean Pagination & Counts**: Displays dynamically updated row index indices and total records count under active search.
+
+### 5. Professional Design System
 *   **Premium Dashboard UI**: A clean, modern interface utilizing a gold-and-white aesthetic for high readability.
 *   **Full Responsiveness**: Optimized grid systems that adapt seamlessly from desktop administration to mobile participation.
 *   **Accessibility**: Built with Headless UI to ensure high standards of interaction and consistency.
 
-### 5. High-Performance Optimization Architecture
+### 6. High-Performance Optimization Architecture
 To ensure high scalability and sub-second response times even under heavy academic cohorts, the platform integrates a modern performance layer:
 *   **Projection & Lean Querying**: Employs Mongoose `.select()` and `.lean()` to load only necessary fields, eliminating the overhead of full document hydration.
 *   **Strategic Database Indexing**: Multi-field compound indexes on `Attendance` (`studentId`, `sessionId`), `Session` (`teacherId`, `classId`, `startTime`), and `Class` (`departmentId`, `year`) ensure index-covered scans for zero-latency reports.
