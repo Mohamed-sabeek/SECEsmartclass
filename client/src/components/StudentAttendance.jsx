@@ -14,6 +14,7 @@ import {
 import axios from 'axios';
 import Dropdown from './ui/Dropdown';
 import Pagination from './common/Pagination';
+import { formatTime, formatDate } from '../utils/dateUtils';
 
 const StudentAttendance = () => {
   const [stats, setStats] = useState(null);
@@ -279,7 +280,7 @@ const StudentAttendance = () => {
                     </td>
                     <td className="px-10 py-6 text-center">
                       <span className="text-xs font-black text-[#1A1A1A] italic uppercase">
-                        {new Date(session.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {formatDate(session.startTime)}
                       </span>
                     </td>
                     <td className="px-10 py-6 text-center">
@@ -297,9 +298,9 @@ const StudentAttendance = () => {
                     </td>
                     <td className="px-10 py-6 text-center">
                        <span className="text-[10px] font-black text-gray-400 italic uppercase">
-                          {new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                          {formatTime(session.startTime)}
                           {" — "}
-                          {session.endTime ? new Date(session.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : 'Ongoing'}
+                          {session.endTime ? formatTime(session.endTime) : 'Ongoing'}
                        </span>
                     </td>
                     <td className="px-10 py-6 text-right">

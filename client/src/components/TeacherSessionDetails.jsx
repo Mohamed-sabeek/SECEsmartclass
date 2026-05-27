@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { formatTime, formatDate } from '../utils/dateUtils';
 import { 
   ArrowLeft, 
   Calendar, 
@@ -21,6 +22,7 @@ const TeacherSessionDetails = () => {
   const [session, setSession] = useState(null);
   const [attendance, setAttendance] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [exportingExcel, setExportingExcel] = useState(false);
 
   useEffect(() => {
     if (sessionId && sessionId !== 'undefined') {
@@ -43,6 +45,31 @@ const TeacherSessionDetails = () => {
       navigate('/teacher/history');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      setExportingExcel(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`/api/sessions/report/${sessionId}/export/excel`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Report-${session.subject || 'Attendance'}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Excel exported successfully');
+    } catch (error) {
+      console.error('Excel Export error:', error);
+      toast.error('Failed to export Excel report');
+    } finally {
+      setExportingExcel(false);
     }
   };
 
@@ -110,7 +137,7 @@ const TeacherSessionDetails = () => {
                      <span className="text-[10px] font-black uppercase tracking-widest">Date broadcast</span>
                   </div>
                   <p className="text-lg font-black text-white italic">
-                    {new Date(session.startTime).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {formatDate(session.startTime)}
                   </p>
                </div>
                <div className="space-y-1">
@@ -143,9 +170,13 @@ const TeacherSessionDetails = () => {
       <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden">
         <div className="p-8 border-b border-gray-50 bg-gray-50/20 flex justify-between items-center">
            <h3 className="text-xl font-black text-[#1A1A1A] tracking-tight">Academic <span className="text-[#FFD700]">Roster</span></h3>
-           <button className="flex items-center px-6 py-3 bg-[#1A1A1A] text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-[#FFD700] hover:text-[#1A1A1A] transition-all shadow-lg active:scale-95">
-              <Download size={16} className="mr-2" />
-              Export CSV
+           <button 
+             onClick={handleExportExcel}
+             disabled={exportingExcel}
+             className="flex items-center px-6 py-3 bg-[#1A1A1A] text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-[#FFD700] hover:text-[#1A1A1A] transition-all shadow-lg active:scale-95 disabled:opacity-50"
+           >
+              {exportingExcel ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Download size={16} className="mr-2" />}
+              {exportingExcel ? 'Exporting...' : 'Export Excel'}
            </button>
         </div>
 
@@ -189,7 +220,7 @@ const TeacherSessionDetails = () => {
                       </span>
                     </td>
                     <td className="px-10 py-6 text-right text-[10px] font-black text-gray-400 uppercase italic">
-                      {new Date(record.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                      {formatTime(record.createdAt)}
                     </td>
                   </tr>
                 ))

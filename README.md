@@ -29,6 +29,8 @@ Integrates **Jitsi Meet API** for secure, high-fidelity video conferencing direc
 *   **Event-Driven Logging**: Attendance is captured based on actual meeting join/leave events via the Jitsi API.
 *   **Engagement Monitoring**: Tracks student tab visibility to provide insights into classroom participation.
 *   **Analytical Reporting**: Generates automated attendance percentages and historical trends for institutional audits.
+*   **Standardized Timezone Engine**: Enforces Indian Standard Time (IST - Asia/Kolkata) across all UI views and exports, eliminating UTC mismatches.
+*   **Premium Native Excel/PDF Exports**: One-click generation of beautifully formatted, autofitted Excel spreadsheets (via `exceljs`) and structured, high-fidelity PDF reports (via `pdfkit-table`) for institutional storage.
 
 ### 4. Professional Design System
 *   **Premium Dashboard UI**: A clean, modern interface utilizing a gold-and-white aesthetic for high readability.
@@ -49,6 +51,7 @@ Integrates **Jitsi Meet API** for secure, high-fidelity video conferencing direc
 ### **Backend**
 - **Environment**: Node.js & Express.js 5
 - **Database**: MongoDB (via Mongoose ODM)
+- **Spreadsheets & Reporting**: ExcelJS & PDFKit-Table
 - **File Management**: Multer (Local/Transient)
 - **Security**: JWT (JSON Web Tokens), Bcryptjs (Password Hashing)
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { formatTime, formatDate } from '../utils/dateUtils';
 import { 
   Clock, 
   Calendar, 
@@ -24,7 +25,7 @@ const TeacherSessionReport = () => {
   const navigate = useNavigate();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [exportingCSV, setExportingCSV] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
   const [exportingPDF, setExportingPDF] = useState(false);
   const [expandedRows, setExpandedRows] = useState({});
   
@@ -43,28 +44,28 @@ const TeacherSessionReport = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const handleExportCSV = async () => {
+  const handleExportExcel = async () => {
     try {
-      setExportingCSV(true);
+      setExportingExcel(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get(`/api/sessions/report/${sessionId}/export/csv`, {
+      const response = await axios.get(`/api/sessions/report/${sessionId}/export/excel`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: 'blob'
       });
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `Report-${report?.subject || 'Attendance'}.csv`);
+      link.setAttribute('download', `Report-${report?.subject || 'Attendance'}.xlsx`);
       document.body.appendChild(link);
       link.click();
       link.remove();
-      toast.success('CSV exported successfully');
+      toast.success('Excel exported successfully');
     } catch (error) {
-      console.error('CSV Export error:', error);
-      toast.error('Failed to export CSV report');
+      console.error('Excel Export error:', error);
+      toast.error('Failed to export Excel report');
     } finally {
-      setExportingCSV(false);
+      setExportingExcel(false);
     }
   };
 
@@ -115,19 +116,7 @@ const TeacherSessionReport = () => {
     }));
   };
 
-  const formatTime = (dateString) => {
-    if (!dateString) return 'In Progress';
-    return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-  };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-  };
 
   const getFilteredAndSortedStudents = () => {
     if (!report) return [];
@@ -205,20 +194,20 @@ const TeacherSessionReport = () => {
         </button>
 
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-            {/* CSV Export Button */}
+            {/* Excel Export Button */}
             <button 
-              onClick={handleExportCSV}
-              disabled={exportingCSV || exportingPDF}
+              onClick={handleExportExcel}
+              disabled={exportingExcel || exportingPDF}
               className="w-full sm:w-auto flex items-center justify-center px-6 py-3 bg-white border border-gray-100 text-[#1A1A1A] rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-50 transition-all shadow-sm active:scale-95 disabled:opacity-50"
             >
-              {exportingCSV ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Activity size={16} className="mr-2 text-[#FFD700]" />}
-              {exportingCSV ? 'Processing...' : 'Export CSV'}
+              {exportingExcel ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Activity size={16} className="mr-2 text-[#FFD700]" />}
+              {exportingExcel ? 'Processing...' : 'Export Excel'}
             </button>
 
             {/* PDF Export Button */}
             <button 
               onClick={handleExportPDF}
-              disabled={exportingCSV || exportingPDF}
+              disabled={exportingExcel || exportingPDF}
               className="w-full sm:w-auto flex items-center justify-center px-6 py-3 bg-[#1A1A1A] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#FFD700] hover:text-[#1A1A1A] transition-all shadow-xl active:scale-95 disabled:opacity-50"
             >
               {exportingPDF ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Download size={16} className="mr-2" />}

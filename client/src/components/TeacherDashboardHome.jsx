@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BookOpen, Video, Users, ArrowRight, TrendingUp, Zap, LayoutDashboard, Calendar, Clock, Trash2, Play } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { formatDate } from '../utils/dateUtils';
 const TeacherDashboardHome = ({ teacher, setActiveTab }) => {
   const [scheduledSessions, setScheduledSessions] = useState([]);
 
@@ -169,7 +170,7 @@ const TeacherDashboardHome = ({ teacher, setActiveTab }) => {
                    </div>
                    
                    <span className="inline-block px-3 py-1 bg-white rounded-lg text-[9px] font-black uppercase tracking-widest text-[#FFD700] mb-4 shadow-sm italic">
-                      {new Date(session.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {formatDate(session.scheduledDate)}
                    </span>
                    <h4 className="text-lg font-black text-[#1A1A1A] italic mb-1 uppercase leading-none">{session.subject}</h4>
                    <p className="text-gray-500 text-xs font-bold mb-4">{session.class?.className} - {session.class?.section}</p>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { formatTime } from '../utils/dateUtils';
 import { 
   BookOpen, 
   GraduationCap, 
@@ -153,7 +154,7 @@ const TeacherClasses = ({ teacher, assignedClasses }) => {
                        <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center mr-3">
                           <Clock size={14} className="text-emerald-500" />
                        </div>
-                       <span className="text-[10px] font-black uppercase tracking-widest leading-none italic">Started {new Date(activeSession.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                       <span className="text-[10px] font-black uppercase tracking-widest leading-none italic">Started {formatTime(activeSession.startTime)}</span>
                     </div>
                   )}
                 </div>

@@ -11,7 +11,7 @@ const {
   getJitsiToken,
   leaveSession,
   getSessionReport,
-  exportSessionReportCSV,
+  exportSessionReportExcel,
   exportSessionReportPDF,
   scheduleSession,
   getUpcomingScheduledSessions,
@@ -30,7 +30,7 @@ router.post('/schedule', scheduleSession);
 router.get('/scheduled', getUpcomingScheduledSessions);
 router.delete('/scheduled/:id', deleteScheduledSession);
 router.get('/report/:id', getSessionReport);
-router.get('/report/:id/export/csv', exportSessionReportCSV);
+router.get('/report/:id/export/excel', exportSessionReportExcel);
 router.get('/report/:id/export/pdf', exportSessionReportPDF);
 router.get('/:id', getSessionDetails);
 router.patch('/:id/end', endSession);

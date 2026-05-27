@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { formatDate } from '../utils/dateUtils';
 
 const StudentDashboardHome = ({ user }) => {
   const [stats, setStats] = useState({
@@ -241,7 +242,7 @@ const StudentDashboardHome = ({ user }) => {
                 return (
                 <div key={idx} className="bg-gray-50 rounded-3xl p-6 border border-gray-100 hover:border-[#FFD700]/30 transition-colors">
                    <span className="inline-block px-3 py-1 bg-white rounded-lg text-[9px] font-black uppercase tracking-widest text-[#FFD700] mb-4 shadow-sm italic">
-                      {new Date(session.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {formatDate(session.scheduledDate)}
                    </span>
                    <h4 className="text-lg font-black text-[#1A1A1A] italic mb-1 uppercase leading-none">{session.subject}</h4>
                    <p className="text-gray-500 text-xs font-bold mb-4">{session.teacher?.name}</p>

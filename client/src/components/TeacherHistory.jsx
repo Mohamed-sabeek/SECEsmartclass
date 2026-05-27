@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { History, Calendar, Clock, Loader2, ArrowRight, X } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { formatTime, formatDate } from '../utils/dateUtils';
 import Dropdown from './ui/Dropdown';
 import Pagination from './common/Pagination';
 
@@ -260,17 +261,17 @@ const TeacherHistory = ({ teacher }) => {
                     </td>
                     <td className="px-10 py-6 text-center">
                       <span className="text-xs font-black text-[#1A1A1A] italic uppercase">
-                        {new Date(session.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {formatDate(session.startTime)}
                       </span>
                     </td>
                     <td className="px-10 py-6 text-center">
                       <div className="flex flex-col items-center">
                         <span className="text-[10px] font-black text-gray-800 italic uppercase">
-                          {new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                          {formatTime(session.startTime)}
                         </span>
                         <div className="w-px h-2 bg-gray-200 my-1"></div>
                         <span className="text-[10px] font-black text-gray-400 italic uppercase">
-                          {session.endTime ? new Date(session.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : 'Ongoing'}
+                          {session.endTime ? formatTime(session.endTime) : 'Ongoing'}
                         </span>
                       </div>
                     </td>

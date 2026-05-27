@@ -8,6 +8,8 @@ const asyncHandler = require('../utils/asyncHandler');
 const jwt = require('jsonwebtoken');
 const { sendEmail } = require('../utils/sendEmail');
 const { sessionStartTemplate, sessionScheduledTemplate } = require('../utils/emailTemplates');
+const { formatTime, formatDate } = require('../utils/dateUtils');
+const exceljs = require('exceljs');
 
 // @desc Start a new class session
 // @route POST /api/sessions
@@ -608,10 +610,10 @@ const getSessionReport = asyncHandler(async (req, res) => {
 
 const PDFDocument = require('pdfkit-table');
 
-// @desc Export session report as CSV
-// @route GET /api/sessions/report/:id/export/csv
+// @desc Export session report as Excel (.xlsx)
+// @route GET /api/sessions/report/:id/export/excel
 // @access Private (Teacher)
-const exportSessionReportCSV = asyncHandler(async (req, res) => {
+const exportSessionReportExcel = asyncHandler(async (req, res) => {
   try {
     const session = await Session.findById(req.params.id)
       .populate('classId', 'className section year')
@@ -628,8 +630,28 @@ const exportSessionReportCSV = asyncHandler(async (req, res) => {
 
     const totalSessionSeconds = Math.max(Math.floor((session.endTime - session.startTime) / 1000), 1);
     
-    // Header for CSV
-    let csvContent = 'Student Name,Email,Join Time,Leave Time,Duration,Percentage,Status\n';
+    const workbook = new exceljs.Workbook();
+    const worksheet = workbook.addWorksheet('Attendance Report');
+
+    // Add headers
+    worksheet.addRow([
+      'Student Name',
+      'Email',
+      'Join Time',
+      'Leave Time',
+      'Duration',
+      'Percentage',
+      'Status'
+    ]);
+
+    // Set column widths as requested
+    worksheet.getColumn(1).width = 25;
+    worksheet.getColumn(2).width = 35;
+    worksheet.getColumn(3).width = 15;
+    worksheet.getColumn(4).width = 15;
+    worksheet.getColumn(5).width = 18;
+    worksheet.getColumn(6).width = 15;
+    worksheet.getColumn(7).width = 15;
 
     let presentCount = 0;
     let absentCount = 0;
@@ -637,8 +659,8 @@ const exportSessionReportCSV = asyncHandler(async (req, res) => {
     allStudentsInClass.forEach(student => {
       const studentEntry = session.students.find(s => s.studentId.toString() === student._id.toString());
       
-      let firstJoinStr = '—';
-      let lastLeaveStr = '—';
+      let firstJoinStr = '-';
+      let lastLeaveStr = '-';
       let totalAttendedSeconds = 0;
 
       if (studentEntry && studentEntry.logs.length > 0) {
@@ -651,10 +673,10 @@ const exportSessionReportCSV = asyncHandler(async (req, res) => {
 
         if (validLogs.length > 0) {
           const sortedLogs = validLogs.sort((a, b) => new Date(a.joinTime) - new Date(b.joinTime));
-          firstJoinStr = new Date(sortedLogs[0].joinTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+          firstJoinStr = formatTime(sortedLogs[0].joinTime);
           
           const lastLog = sortedLogs[sortedLogs.length - 1];
-          lastLeaveStr = new Date(lastLog.leaveTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+          lastLeaveStr = formatTime(lastLog.leaveTime);
 
           validLogs.forEach(log => {
             totalAttendedSeconds += Math.floor((new Date(log.leaveTime) - new Date(log.joinTime)) / 1000);
@@ -674,25 +696,43 @@ const exportSessionReportCSV = asyncHandler(async (req, res) => {
         ? (attMins > 0 ? `${attMins} mins ${attSecs} secs` : `${attSecs} secs`)
         : '0 secs';
 
-      const studentName = `"${student.name.replace(/"/g, '""')}"`;
-      csvContent += `${studentName},${student.email},${firstJoinStr},${lastLeaveStr},${durationStr},${percentage}%,${status}\n`;
+      worksheet.addRow([
+        student.name,
+        student.email,
+        firstJoinStr,
+        lastLeaveStr,
+        durationStr,
+        `${percentage}%`,
+        status
+      ]);
     });
 
-    // Add summary at the bottom (Strict 2-column format after 1 blank row)
-    csvContent += `\n`;
-    csvContent += `Summary,\n`;
-    csvContent += `Total Students,${allStudentsInClass.length}\n`;
-    csvContent += `Present,${presentCount}\n`;
-    csvContent += `Absent,${absentCount}\n`;
-    csvContent += `Subject,${session.subject}\n`;
-    csvContent += `Date,${new Date(session.startTime).toLocaleDateString()}\n`;
+    // Add empty row
+    worksheet.addRow([]);
 
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename=Report-${session.classId.className}.csv`);
-    res.status(200).send(csvContent);
+    // Add Summary header and details
+    worksheet.addRow(['Summary']);
+    worksheet.addRow(['Total Students', allStudentsInClass.length]);
+    worksheet.addRow(['Present', presentCount]);
+    worksheet.addRow(['Absent', absentCount]);
+    worksheet.addRow(['Subject', session.subject]);
+    worksheet.addRow(['Date', formatDate(session.startTime)]);
+
+    // Write to res
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=Report-${session.classId.className}.xlsx`
+    );
+
+    await workbook.xlsx.write(res);
+    res.status(200).end();
 
   } catch (error) {
-    console.error('CSV EXPORT ERROR:', error.message);
+    console.error('EXCEL EXPORT ERROR:', error.message);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
@@ -729,7 +769,7 @@ const exportSessionReportPDF = asyncHandler(async (req, res) => {
     // Header (Centered)
     doc.fillColor('#1A1A1A').fontSize(22).font('Helvetica-Bold').text('ATTENDANCE REPORT', { align: 'center' });
     doc.moveDown(0.3);
-    doc.fillColor('#6B7280').fontSize(11).font('Helvetica').text(`${session.subject} • ${new Date(session.startTime).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`, { align: 'center' });
+    doc.fillColor('#6B7280').fontSize(11).font('Helvetica').text(`${session.subject} • ${formatDate(session.startTime)}`, { align: 'center' });
     doc.moveDown(2);
 
     // Summary Boxes (Centered in one row)
@@ -754,9 +794,9 @@ const exportSessionReportPDF = asyncHandler(async (req, res) => {
 
         if (validLogs.length > 0) {
           const sorted = validLogs.sort((a, b) => new Date(a.joinTime) - new Date(b.joinTime));
-          firstJoin = new Date(sorted[0].joinTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+          firstJoin = formatTime(sorted[0].joinTime);
           const lastLog = sorted[sorted.length - 1];
-          lastLeave = new Date(lastLog.leaveTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+          lastLeave = formatTime(lastLog.leaveTime);
           validLogs.forEach(l => { attendedSecs += Math.floor((new Date(l.leaveTime) - new Date(l.joinTime)) / 1000); });
         }
       }
@@ -815,7 +855,7 @@ const exportSessionReportPDF = asyncHandler(async (req, res) => {
     });
 
     // Footer (Centered Bottom)
-    doc.fontSize(8).fillColor('#9CA3AF').text(`Generated by SECE SmartClass • ${new Date().toLocaleString()}`, 0, doc.page.height - 60, { align: 'center' });
+    doc.fontSize(8).fillColor('#9CA3AF').text(`Generated by SECE SmartClass • ${formatDate(new Date())} ${formatTime(new Date())}`, 0, doc.page.height - 60, { align: 'center' });
 
     doc.end();
 
@@ -1002,7 +1042,7 @@ module.exports = {
   getJitsiToken,
   leaveSession,
   getSessionReport,
-  exportSessionReportCSV,
+  exportSessionReportExcel,
   exportSessionReportPDF,
   scheduleSession,
   getUpcomingScheduledSessions,

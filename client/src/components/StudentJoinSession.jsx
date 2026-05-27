@@ -17,6 +17,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { formatTime } from '../utils/dateUtils';
 
 const StudentJoinSession = () => {
   const { user: currentUser } = useAuth();
@@ -260,7 +261,7 @@ const StudentJoinSession = () => {
           <div className="flex items-center space-x-4">
              <div className="px-6 py-3 bg-white border border-gray-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-[#1A1A1A] shadow-sm flex items-center">
                 <Clock size={14} className="mr-2 text-[#FFD700]" />
-                {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                {formatTime(new Date())}
              </div>
              <button 
                onClick={() => handleLeft(true)}
