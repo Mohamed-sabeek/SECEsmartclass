@@ -36,6 +36,11 @@ import PasswordWarningBanner from '../components/PasswordWarningBanner';
 import Logo from '../assets/favicon.png';
 
 import DashboardCardSkeleton from '../components/skeletons/DashboardCardSkeleton';
+import ClassesSkeleton from '../components/skeletons/ClassesSkeleton';
+import LiveSessionSkeleton from '../components/skeletons/LiveSessionSkeleton';
+import SessionReportSkeleton from '../components/skeletons/SessionReportSkeleton';
+import SessionDetailsSkeleton from '../components/skeletons/SessionDetailsSkeleton';
+import ReportsListSkeleton from '../components/skeletons/ReportsListSkeleton';
 
 const TeacherDashboard = () => {
   const { logout, user } = useAuth();
@@ -96,6 +101,31 @@ const TeacherDashboard = () => {
     }
   };
 
+  const renderSkeleton = () => {
+    if (sessionId) {
+      if (window.location.pathname.includes('/reports/')) {
+        return <SessionReportSkeleton />;
+      }
+      return <SessionDetailsSkeleton />;
+    }
+    if (activeTab === 'history') {
+      return <ReportsListSkeleton />;
+    }
+    if (classId || activeTab === 'attendance') {
+      return <TableSkeleton />;
+    }
+    if (activeTab === 'profile') {
+      return <ProfileSkeleton />;
+    }
+    if (activeTab === 'live') {
+      return <LiveSessionSkeleton />;
+    }
+    if (activeTab === 'classes') {
+      return <ClassesSkeleton />;
+    }
+    return <DashboardCardSkeleton />;
+  };
+
   const renderContent = () => {
     if (classId) {
       return <TeacherBatchRoster />;
@@ -128,7 +158,7 @@ const TeacherDashboard = () => {
         );
       case 'history':
         return (
-          <Suspense fallback={<TableSkeleton />}>
+          <Suspense fallback={<ReportsListSkeleton />}>
             <TeacherHistory teacher={teacherData} />
           </Suspense>
         );
@@ -250,7 +280,7 @@ const TeacherDashboard = () => {
               navigate('/teacher/profile');
             }} />
             {loading ? (
-              <DashboardCardSkeleton />
+              renderSkeleton()
             ) : renderContent()}
           </div>
         </div>

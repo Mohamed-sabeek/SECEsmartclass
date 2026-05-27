@@ -14,6 +14,7 @@ import {
   Clock,
   X
 } from 'lucide-react';
+import JoinSessionSkeleton from './skeletons/JoinSessionSkeleton';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -234,11 +235,7 @@ const StudentJoinSession = () => {
   };
 
   if (loading) {
-    return (
-      <div className="h-96 flex items-center justify-center">
-        <Loader2 className="animate-spin text-[#FFD700]" size={40} />
-      </div>
-    );
+    return <JoinSessionSkeleton />;
   }
 
   // Meeting View

@@ -29,6 +29,9 @@ import PasswordWarningBanner from '../components/PasswordWarningBanner';
 
 import Logo from '../assets/favicon.png';
 import DashboardCardSkeleton from '../components/skeletons/DashboardCardSkeleton';
+import JoinSessionSkeleton from '../components/skeletons/JoinSessionSkeleton';
+import ClassesSkeleton from '../components/skeletons/ClassesSkeleton';
+import StudentAttendanceSkeleton from '../components/skeletons/StudentAttendanceSkeleton';
 
 const StudentDashboard = () => {
   const { logout, user } = useAuth();
@@ -84,6 +87,22 @@ const StudentDashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const renderSkeleton = () => {
+    if (activeTab === 'attendance' || activeTab === 'history') {
+      return <StudentAttendanceSkeleton />;
+    }
+    if (activeTab === 'teachers') {
+      return <ClassesSkeleton />;
+    }
+    if (activeTab === 'profile') {
+      return <ProfileSkeleton />;
+    }
+    if (activeTab === 'join') {
+      return <JoinSessionSkeleton />;
+    }
+    return <DashboardCardSkeleton />;
   };
 
   const renderContent = () => {
@@ -218,7 +237,7 @@ const StudentDashboard = () => {
               navigate('/student/profile');
             }} />
             {loading ? (
-              <DashboardCardSkeleton />
+              renderSkeleton()
             ) : renderContent()}
           </div>
         </div>

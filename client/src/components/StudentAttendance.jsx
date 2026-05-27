@@ -15,7 +15,7 @@ import axios from 'axios';
 import Dropdown from './ui/Dropdown';
 import Pagination from './common/Pagination';
 import { formatTime, formatDate } from '../utils/dateUtils';
-import TableSkeleton from './skeletons/TableSkeleton';
+import StudentAttendanceSkeleton from './skeletons/StudentAttendanceSkeleton';
 
 const StudentAttendance = () => {
   const [stats, setStats] = useState(null);
@@ -96,7 +96,7 @@ const StudentAttendance = () => {
   };
 
   if (loading && historyLoading) {
-    return <TableSkeleton />;
+    return <StudentAttendanceSkeleton />;
   }
 
   const paginatedHistory = history;

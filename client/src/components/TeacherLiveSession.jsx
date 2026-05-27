@@ -4,6 +4,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import Dropdown from './ui/Dropdown';
+import LiveSessionSkeleton from './skeletons/LiveSessionSkeleton';
 
 const TeacherLiveSession = ({ teacher, preSelectedClassId, preSelectedSubject }) => {
   const navigate = useNavigate();
@@ -278,11 +279,7 @@ const TeacherLiveSession = ({ teacher, preSelectedClassId, preSelectedSubject })
   };
 
   if (loading) {
-    return (
-      <div className="h-96 flex items-center justify-center bg-white rounded-[2.5rem] border border-gray-100 shadow-sm">
-        <Loader2 className="animate-spin text-[#FFD700]" size={40} />
-      </div>
-    );
+    return <LiveSessionSkeleton />;
   }
 
   return (

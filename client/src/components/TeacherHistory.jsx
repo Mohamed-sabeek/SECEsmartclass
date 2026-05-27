@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { formatTime, formatDate } from '../utils/dateUtils';
 import Dropdown from './ui/Dropdown';
 import Pagination from './common/Pagination';
-import TableSkeleton from './skeletons/TableSkeleton';
+import ReportsListSkeleton from './skeletons/ReportsListSkeleton';
 
 const TeacherHistory = ({ teacher }) => {
   const [history, setHistory] = useState([]);
@@ -96,7 +96,7 @@ const TeacherHistory = ({ teacher }) => {
   const paginatedHistory = history;
 
   if (loading && history.length === 0) {
-    return <TableSkeleton />;
+    return <ReportsListSkeleton />;
   }
 
   return (
