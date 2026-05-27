@@ -161,7 +161,48 @@ const AdminAssignTeacher = () => {
   const filteredTeachers = teachers; // Search handled by server now
 
   if (loading) {
-    return <TableSkeleton />;
+    return (
+      <div className="animate-pulse max-w-6xl mx-auto">
+        <div className="mb-8">
+          <div className="h-9 w-64 bg-gray-200 rounded-2xl mb-3"></div>
+          <div className="h-4 w-96 bg-gray-200 rounded-xl"></div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Teacher Selection Column Shimmer */}
+          <div className="lg:col-span-4 space-y-6">
+            <div className="bg-white rounded-[1.5rem] shadow-xl border border-gray-100 p-6">
+              <div className="flex items-center mb-4">
+                <div className="w-5 h-5 bg-gray-200 rounded-md mr-2"></div>
+                <div className="h-5 w-32 bg-gray-200 rounded-md"></div>
+              </div>
+              
+              <div className="h-12 bg-gray-50 rounded-xl mb-4"></div>
+
+              <div className="space-y-2 max-h-[400px]">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="p-4 bg-white border border-gray-100 rounded-xl space-y-2 shadow-sm">
+                    <div className="h-4 w-32 bg-gray-200 rounded-md"></div>
+                    <div className="h-3 w-16 bg-gray-100 rounded-md"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Class Assignment Area Empty State Shimmer */}
+          <div className="lg:col-span-8">
+            <div className="h-full min-h-[600px] bg-gray-50/50 rounded-[1.5rem] border-2 border-dashed border-gray-200 flex flex-col items-center justify-center p-12">
+              <div className="w-20 h-20 bg-white rounded-3xl shadow-lg flex items-center justify-center mb-6">
+                <div className="w-10 h-10 bg-gray-150 rounded-2xl"></div>
+              </div>
+              <div className="h-7 w-64 bg-gray-200 rounded-xl mb-3"></div>
+              <div className="h-4 w-80 bg-gray-200 rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
