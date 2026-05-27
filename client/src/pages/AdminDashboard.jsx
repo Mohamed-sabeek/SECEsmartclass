@@ -10,7 +10,7 @@ import AdminAssignTeacher from '../components/AdminAssignTeacher';
 import { LayoutGrid, ClipboardCheck } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import Logo from '../assets/favicon.png';
+import Logo from '../assets/favicon.webp';
 
 const AdminDashboard = () => {
   const { logout } = useAuth();

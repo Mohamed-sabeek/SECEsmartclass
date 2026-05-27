@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { Mail, Building2, Users, User as UserIcon, Briefcase, Camera, Edit2, Save, X, Loader2, ShieldCheck } from "lucide-react";
 import toast from "react-hot-toast";
-import defaultAvatar from "../../assets/default-avatar.jpg";
+import defaultAvatar from "../../assets/default-avatar.webp";
 import ChangePasswordForm from "../../components/ChangePasswordForm";
 import { useAuth } from "../../context/AuthContext";
 import { getOptimizedAvatar } from "../../utils/imageUtils";

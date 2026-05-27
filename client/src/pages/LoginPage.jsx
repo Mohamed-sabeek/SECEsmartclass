@@ -17,7 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-import seceLogo from '../assets/sece-logo.png';
+import seceLogo from '../assets/sece-logo.webp';
 
 const LoginPage = () => {
   const navigate = useNavigate();

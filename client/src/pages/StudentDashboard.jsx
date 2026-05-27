@@ -27,7 +27,7 @@ const StudentAttendance = lazy(() => import('../components/StudentAttendance'));
 import { useNavigate, useParams } from 'react-router-dom';
 import PasswordWarningBanner from '../components/PasswordWarningBanner';
 
-import Logo from '../assets/favicon.png';
+import Logo from '../assets/favicon.webp';
 import DashboardCardSkeleton from '../components/skeletons/DashboardCardSkeleton';
 import JoinSessionSkeleton from '../components/skeletons/JoinSessionSkeleton';
 import ClassesSkeleton from '../components/skeletons/ClassesSkeleton';

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Plus, Search, X, AlertCircle, GraduationCap, LayoutGrid, Edit2, Trash2, Upload, Filter, ChevronRight } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import defaultAvatar from '../assets/default-avatar.jpg';
+import defaultAvatar from '../assets/default-avatar.webp';
 import Dropdown from './ui/Dropdown';
 import useDebounce from '../hooks/useDebounce';
 import Pagination from './common/Pagination';

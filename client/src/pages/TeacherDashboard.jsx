@@ -33,7 +33,7 @@ const TeacherHistory = lazy(() => import('../components/TeacherHistory'));
 import { useParams, useNavigate } from 'react-router-dom';
 import PasswordWarningBanner from '../components/PasswordWarningBanner';
 
-import Logo from '../assets/favicon.png';
+import Logo from '../assets/favicon.webp';
 
 import DashboardCardSkeleton from '../components/skeletons/DashboardCardSkeleton';
 import ClassesSkeleton from '../components/skeletons/ClassesSkeleton';

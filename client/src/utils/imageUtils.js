@@ -1,4 +1,4 @@
-import defaultAvatar from '../assets/default-avatar.jpg';
+import defaultAvatar from '../assets/default-avatar.webp';
 
 /**
  * Optimizes a Cloudinary image URL for fast, lightweight delivery
