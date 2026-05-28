@@ -514,7 +514,7 @@ const bulkUploadUsers = async (req, res) => {
             }
 
             // 6. Generate and save user
-            const defaultPassword = 'Temp@' + Math.random().toString(36).slice(-4);
+            const defaultPassword = 'Temp@123';
             
             const userData = {
               name: name.trim(),
