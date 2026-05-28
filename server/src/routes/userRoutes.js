@@ -15,6 +15,7 @@ const {
   uploadProfileImage
 } = require('../controllers/userController');
 const upload = require('../middleware/upload');
+const csvUpload = require('../middleware/csvUpload');
 
 const { body } = require('express-validator');
 const { validate } = require('../middleware/validator');
@@ -58,7 +59,7 @@ router.put('/:id', updateUser);
 router.delete('/:id', deleteUser);
 
 // POST /api/users/bulk-upload - Bulk upload users via CSV
-router.post('/bulk-upload', upload.single('file'), bulkUploadUsers);
+router.post('/bulk-upload', csvUpload, bulkUploadUsers);
 
 // POST /api/users/assign-classes - Assign teacher to multiple classes
 router.post('/assign-classes', assignTeacherToClasses);

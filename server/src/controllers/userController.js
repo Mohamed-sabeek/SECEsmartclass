@@ -409,56 +409,143 @@ const bulkUploadUsers = async (req, res) => {
         let added = 0;
         let skipped = 0;
         let errors = [];
+        let rowNum = 1; // row number starts at 1 (representing headers at row 1)
 
         for (const row of results) {
+          rowNum++;
           try {
-            const { name, email, rollNo, year, classId } = row;
+            const { name, email, rollNo, className, section, currentYear, admissionYear } = row;
 
-            // Basic Validation
-            if (!name || !email) {
+            // 1. Basic Field Validation
+            if (!name || !name.trim()) {
               skipped++;
+              errors.push(`Row ${rowNum}: Name is required`);
+              continue;
+            }
+            if (!email || !email.trim()) {
+              skipped++;
+              errors.push(`Row ${rowNum} (${name}): Email is required`);
+              continue;
+            }
+            if (!rollNo || !rollNo.trim()) {
+              skipped++;
+              errors.push(`Row ${rowNum} (${email}): Roll number is required`);
+              continue;
+            }
+            if (!className || !className.trim()) {
+              skipped++;
+              errors.push(`Row ${rowNum} (${email}): Class name is required`);
+              continue;
+            }
+            if (!section || !section.trim()) {
+              skipped++;
+              errors.push(`Row ${rowNum} (${email}): Section is required`);
+              continue;
+            }
+            if (!currentYear) {
+              skipped++;
+              errors.push(`Row ${rowNum} (${email}): Current year is required`);
+              continue;
+            }
+            if (!admissionYear) {
+              skipped++;
+              errors.push(`Row ${rowNum} (${email}): Admission year is required`);
               continue;
             }
 
-            // Check if user exists
-            const existingUser = await User.findOne({ email: email.toLowerCase() });
+            const trimmedEmail = email.trim().toLowerCase();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(trimmedEmail)) {
+              skipped++;
+              errors.push(`Row ${rowNum} (${trimmedEmail}): Invalid email format`);
+              continue;
+            }
+
+            // 2. Duplicate Email Check
+            const existingUser = await User.findOne({ email: trimmedEmail });
             if (existingUser) {
               skipped++;
+              errors.push(`Row ${rowNum} (${trimmedEmail}): Duplicate email: ${trimmedEmail}`);
               continue;
             }
 
-            // Create user
+            // 3. Resolve classId automatically from className
+            const Class = require('../models/Class');
+            const existingClass = await Class.findOne({
+              className: { $regex: new RegExp(`^${className.trim()}$`, 'i') }
+            });
+
+            if (!existingClass) {
+              skipped++;
+              errors.push(`Row ${rowNum} (${trimmedEmail}): Class not found: ${className}`);
+              continue;
+            }
+
+            // 4. Normalize and Validate Section
+            const normalizedSection = section.toUpperCase().trim() === "NONE" ? "NONE" : section.toUpperCase().trim();
+
+            let isSectionValid = false;
+            if ((!existingClass.sections || existingClass.sections.length === 0) && (normalizedSection === 'NONE' || normalizedSection === '')) {
+              isSectionValid = true;
+            } else if (existingClass.sections && existingClass.sections.length > 0) {
+              isSectionValid = existingClass.sections.some(s => s.name.toUpperCase() === normalizedSection) || normalizedSection === 'NONE';
+            }
+
+            if (!isSectionValid) {
+              skipped++;
+              errors.push(`Row ${rowNum} (${trimmedEmail}): Section '${section}' does not exist in class '${className}'`);
+              continue;
+            }
+
+            // 5. Year and Admission Year Validation
+            const currentYearNum = Number(currentYear);
+            const admissionYearNum = Number(admissionYear);
+
+            if (isNaN(currentYearNum) || currentYearNum < 1 || currentYearNum > 4) {
+              skipped++;
+              errors.push(`Row ${rowNum} (${trimmedEmail}): Current year must be a number between 1 and 4`);
+              continue;
+            }
+
+            if (isNaN(admissionYearNum) || admissionYearNum < 2000 || admissionYearNum > 2100) {
+              skipped++;
+              errors.push(`Row ${rowNum} (${trimmedEmail}): Invalid admission year: ${admissionYear}`);
+              continue;
+            }
+
+            // 6. Generate and save user
             const defaultPassword = 'Temp@' + Math.random().toString(36).slice(-4);
             
             const userData = {
-              name,
-              email: email.toLowerCase(),
+              name: name.trim(),
+              email: trimmedEmail,
               password: defaultPassword,
-              role,
-              department: req.body.department || '' // Optional department from body
+              role: 'student',
+              mustChangePassword: true,
+              classId: existingClass._id,
+              section: normalizedSection,
+              studentDetails: {
+                rollNo: rollNo.trim().toUpperCase(),
+                currentYear: currentYearNum,
+                admissionYear: admissionYearNum
+              }
             };
-
-            if (role === 'student') {
-              userData.classId = classId || undefined;
-              userData.studentDetails = {
-                rollNo: rollNo || '',
-                year: parseInt(year) || 1
-              };
-            }
 
             await User.create(userData);
             added++;
           } catch (err) {
             console.error('Row processing error:', err);
             skipped++;
+            errors.push(`Row ${rowNum}: ${err.message}`);
           }
         }
 
         res.status(200).json({
-          success: true,
+          success: added > 0,
           message: `Bulk upload complete. Added: ${added}, Skipped: ${skipped}`,
           added,
-          skipped
+          skipped,
+          errors
         });
       });
   } catch (error) {

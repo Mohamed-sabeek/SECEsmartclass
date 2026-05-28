@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Search, X, AlertCircle, GraduationCap, LayoutGrid, Edit2, Trash2, Upload, Filter, ChevronRight } from 'lucide-react';
+import { Plus, Search, X, AlertCircle, GraduationCap, LayoutGrid, Edit2, Trash2, Upload, Filter, ChevronRight, Download } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import defaultAvatar from '../assets/default-avatar.webp';
@@ -21,6 +21,8 @@ const AdminStudents = () => {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [uploadSummary, setUploadSummary] = useState(null);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, totalCount: 0 });
@@ -200,14 +202,57 @@ const AdminStudents = () => {
         }
       });
       
-      toast.success(response.data.message, { id: loadingToast, duration: 5000 });
+      const { added, skipped, errors, message } = response.data;
+      toast.dismiss(loadingToast);
+      
+      setUploadSummary({ added, skipped, errors });
+      setShowSummaryModal(true);
+      
+      if (added > 0) {
+        toast.success(message || 'Bulk upload complete!', { duration: 5000 });
+      } else {
+        toast.error('All rows failed to upload. Check detailed report.', { duration: 5000 });
+      }
+      
       fetchStudents(1);
     } catch (err) {
       console.error('Bulk upload error:', err);
-      toast.error('Bulk upload failed', { id: loadingToast });
+      toast.dismiss(loadingToast);
+      toast.error(err.response?.data?.message || 'Bulk upload failed');
     }
     // Reset input
     e.target.value = null;
+  };
+
+  const handleDownloadFailedReport = () => {
+    if (!uploadSummary || !uploadSummary.errors || uploadSummary.errors.length === 0) return;
+    
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + "Error Details\n"
+      + uploadSummary.errors.map(err => `"${err.replace(/"/g, '""')}"`).join("\n");
+      
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "bulk_upload_failed_report.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Failed report downloaded!");
+  };
+
+  const handleDownloadTemplate = () => {
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + "name,email,rollNo,className,section,currentYear,admissionYear\n"
+      + "Abirami S,abirami.s2024it@sece.ac.in,24IT003,2nd IT,NONE,2,2024\n";
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "student_bulk_upload_template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("CSV Template downloaded!");
   };
 
   const handleChange = (e) => {
@@ -237,6 +282,13 @@ const AdminStudents = () => {
             accept=".csv"
             className="hidden"
           />
+          <button
+            onClick={handleDownloadTemplate}
+            className="group flex items-center bg-white hover:bg-gray-50 text-gray-850 border border-gray-200 px-6 py-3 rounded-xl transition-all duration-300 shadow-sm font-bold text-sm active:scale-95"
+          >
+            <Download size={18} className="mr-2" />
+            Download CSV Template
+          </button>
           <button
             onClick={() => fileInputRef.current?.click()}
             className="group flex items-center bg-[#1A1A1A] hover:bg-gray-800 text-white px-6 py-3 rounded-xl transition-all duration-300 shadow-xl font-bold text-sm"
@@ -573,6 +625,78 @@ const AdminStudents = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Upload Summary Modal */}
+      {showSummaryModal && uploadSummary && (
+        <div className="fixed inset-0 bg-[#1A1A1A]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-0 overflow-hidden transform transition-all animate-in zoom-in-95 duration-500 relative">
+            <div className="bg-gray-50/50 py-10 px-8 border-b border-gray-100 relative">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFD700]/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+              <div className="flex justify-between items-center relative">
+                <div>
+                  <h3 className="text-3xl font-black text-[#1A1A1A] tracking-tight">
+                    Bulk Onboarding <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#FFD700] to-[#FFED4E]">Summary</span>
+                  </h3>
+                  <p className="text-gray-400 font-medium mt-1">
+                    Onboarding session completed with details below
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowSummaryModal(false)}
+                  className="w-12 h-12 flex items-center justify-center rounded-xl bg-white text-gray-400 hover:text-red-500 transition-all shadow-sm active:scale-90"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-10 space-y-8">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="bg-green-50/50 border border-green-100 rounded-2xl p-6 text-center shadow-sm">
+                  <span className="block text-4xl font-black text-green-600 mb-1">{uploadSummary.added}</span>
+                  <span className="text-xs font-black text-green-700 uppercase tracking-widest">Students Enrolled</span>
+                </div>
+                <div className={`${uploadSummary.skipped > 0 ? 'bg-red-50/50 border-red-100' : 'bg-gray-50/50 border-gray-100'} border rounded-2xl p-6 text-center shadow-sm`}>
+                  <span className={`block text-4xl font-black ${uploadSummary.skipped > 0 ? 'text-red-500' : 'text-gray-500'} mb-1`}>{uploadSummary.skipped}</span>
+                  <span className={`text-xs font-black uppercase tracking-widest ${uploadSummary.skipped > 0 ? 'text-red-700' : 'text-gray-500'}`}>Failed / Skipped</span>
+                </div>
+              </div>
+
+              {uploadSummary.errors && uploadSummary.errors.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Detailed Failure Log</span>
+                    <button
+                      onClick={handleDownloadFailedReport}
+                      className="group flex items-center text-xs font-black text-red-500 hover:text-red-600 transition-all"
+                    >
+                      <Download size={14} className="mr-1" />
+                      Download Failed Rows
+                    </button>
+                  </div>
+                  <div className="max-h-60 overflow-y-auto border border-red-100 rounded-2xl divide-y divide-red-50/50 bg-red-50/10">
+                    {uploadSummary.errors.map((err, idx) => (
+                      <div key={idx} className="p-4 flex items-start gap-3">
+                        <AlertCircle size={16} className="text-red-500 mt-0.5 flex-shrink-0" />
+                        <span className="text-red-850 text-sm font-medium">{err}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-4">
+                <button
+                  onClick={() => setShowSummaryModal(false)}
+                  className="w-full py-5 bg-[#1A1A1A] hover:bg-gray-800 text-white rounded-xl transition-all duration-300 font-black text-xl shadow-xl active:scale-[0.98]"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
