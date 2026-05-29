@@ -8,11 +8,24 @@ server/node_modules/
 # Environment variables (VERY IMPORTANT)
 .env
 .env.local
+.env.production
+.env.development
+.env.test
 .env.development.local
 .env.test.local
 .env.production.local
 server/.env
+server/.env.local
+server/.env.production
+server/.env.development
+server/.env.test
 client/.env
+client/.env.local
+client/.env.production
+client/.env.development
+client/.env.test
+client/.env*
+server/.env*
 
 # Logs
 logs/
@@ -57,7 +70,14 @@ Desktop.ini
 server/uploads/
 server/temp/
 temp/
+tmp/
 uploads/
+downloads/
+
+# SSL and Cryptographic Keys
+*.pem
+*.key
+*.crt
 
 # Test and Scratch files
 server/test_*.js
@@ -80,3 +100,8 @@ coverage/
 .gemini/
 .antigravity/
 .antigravityignore
+artifacts/
+.tempmediaStorage/
+browser/
+*.webp
+!client/src/assets/*.webp

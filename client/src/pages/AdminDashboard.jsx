@@ -1,6 +1,6 @@
 import { LogOut, LayoutDashboard, Building2, Users, GraduationCap, Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import AdminDashboardHome from '../components/AdminDashboardHome';
 import AdminDepartments from '../components/AdminDepartments';
 import AdminTeachers from '../components/AdminTeachers';
@@ -16,7 +16,7 @@ const AdminDashboard = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { tab } = useParams();
-  const [activeTab, setActiveTab] = useState(tab || 'dashboard');
+  const activeTab = tab || 'dashboard';
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const menuItems = [
@@ -28,11 +28,6 @@ const AdminDashboard = () => {
     { id: 'assign-teachers', label: 'Assign Teachers', icon: ClipboardCheck },
   ];
 
-  useEffect(() => {
-    if (tab && tab !== activeTab) {
-      setActiveTab(tab);
-    }
-  }, [tab]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -104,7 +99,6 @@ const AdminDashboard = () => {
                   <button
                     key={item.id}
                     onClick={() => {
-                      setActiveTab(item.id);
                       navigate(`/admin/${item.id}`);
                       setSidebarOpen(false);
                     }}

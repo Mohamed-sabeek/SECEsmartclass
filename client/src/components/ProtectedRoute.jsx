@@ -1,10 +1,10 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useEffect } from 'react';
 
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { isAuthenticated, role, loading } = useAuth();
-  const location = useLocation();
+
 
   // Prevent back button navigation after logout
   useEffect(() => {

@@ -160,6 +160,28 @@ const endSession = asyncHandler(async (req, res) => {
     session.endTime = new Date();
     session.status = 'ENDED';
 
+    // Look for a corresponding ScheduledSession and mark it as completed
+    try {
+      const todayStart = new Date(session.startTime);
+      todayStart.setHours(0, 0, 0, 0);
+      const todayEnd = new Date(session.startTime);
+      todayEnd.setHours(23, 59, 59, 999);
+
+      await ScheduledSession.updateMany(
+        {
+          teacher: session.teacherId,
+          class: session.classId,
+          subject: session.subject,
+          section: session.section,
+          scheduledDate: { $gte: todayStart, $lte: todayEnd },
+          status: 'SCHEDULED'
+        },
+        { status: 'COMPLETED' }
+      );
+    } catch (schedErr) {
+      console.error('Error auto-completing scheduled session on endSession:', schedErr);
+    }
+
     // Set leaveTime for all unclosed logs for all students
     session.students.forEach(student => {
       student.logs.forEach(log => {

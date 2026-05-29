@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Search, X, AlertCircle, Users, Filter, Upload } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -16,7 +16,6 @@ const AdminTeachers = () => {
   const [teachers, setTeachers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, totalCount: 0 });
   const [filters, setFilters] = useState({ departmentId: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -149,7 +148,6 @@ const AdminTeachers = () => {
 
     try {
       setIsSubmitting(true);
-      setError('');
       const token = localStorage.getItem('token');
       
       const payload = {
@@ -158,7 +156,7 @@ const AdminTeachers = () => {
       };
 
       if (modalMode === 'add') {
-        const response = await axios.post('/api/users', payload, {
+        await axios.post('/api/users', payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.success(`Teacher account created!`);

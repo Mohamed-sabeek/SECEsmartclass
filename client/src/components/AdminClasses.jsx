@@ -12,7 +12,6 @@ const AdminClasses = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
   const [selectedId, setSelectedId] = useState(null);
-  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({ departmentId: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -153,7 +152,6 @@ const AdminClasses = () => {
 
     try {
       setIsSubmitting(true);
-      setError('');
       const token = localStorage.getItem('token');
 
       if (modalMode === 'add') {

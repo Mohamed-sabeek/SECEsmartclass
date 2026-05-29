@@ -5,9 +5,11 @@ import toast from 'react-hot-toast';
 import { formatDate } from '../utils/dateUtils';
 const TeacherDashboardHome = ({ teacher, setActiveTab }) => {
   const [scheduledSessions, setScheduledSessions] = useState([]);
+  const [now, setNow] = useState(new Date());
 
   useEffect(() => {
-    fetchScheduledSessions();
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const fetchScheduledSessions = async () => {
@@ -21,6 +23,12 @@ const TeacherDashboardHome = ({ teacher, setActiveTab }) => {
       console.error('Error fetching scheduled sessions:', error);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchScheduledSessions();
+  }, []);
+
 
   const handleDeleteScheduledSession = async (id) => {
     try {
@@ -54,6 +62,18 @@ const TeacherDashboardHome = ({ teacher, setActiveTab }) => {
   };
 
   const attendanceValue = teacher?.averageAttendance || 0;
+
+  const activeScheduledSessions = (scheduledSessions || []).filter(session => {
+    const scheduledDateObj = new Date(session.scheduledDate);
+    const endDateTime = new Date(scheduledDateObj);
+    const [endH, endM] = session.endTime.split(':');
+    endDateTime.setHours(parseInt(endH, 10), parseInt(endM, 10), 0, 0);
+
+    const isAfterEnd = now > endDateTime;
+    const isCompleted = session.status === 'COMPLETED';
+
+    return !isAfterEnd && !isCompleted;
+  });
 
   const stats = [
     { label: 'Assigned Classes', value: teacher?.assignedClasses?.length || 0, icon: BookOpen, color: 'blue' },
@@ -130,7 +150,7 @@ const TeacherDashboardHome = ({ teacher, setActiveTab }) => {
       </div>
 
       {/* Upcoming Scheduled Sessions */}
-      {scheduledSessions && scheduledSessions.length > 0 ? (
+      {activeScheduledSessions && activeScheduledSessions.length > 0 ? (
         <div className="mt-12 bg-white rounded-[2.5rem] p-10 shadow-xl border border-gray-100 relative overflow-hidden">
           <div className="flex items-center space-x-4 mb-8">
             <div className="w-12 h-12 bg-[#1A1A1A] rounded-2xl flex items-center justify-center">
@@ -143,7 +163,7 @@ const TeacherDashboardHome = ({ teacher, setActiveTab }) => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-             {scheduledSessions.map((session, idx) => {
+             {activeScheduledSessions.map((session, idx) => {
                 const formatTime12h = (time24) => {
                   const [hourStr, minute] = time24.split(':');
                   let hour = parseInt(hourStr, 10);
@@ -151,11 +171,19 @@ const TeacherDashboardHome = ({ teacher, setActiveTab }) => {
                   hour = hour % 12 || 12;
                   return `${hour}:${minute} ${ampm}`;
                 };
-                const isToday = new Date(session.scheduledDate).toDateString() === new Date().toDateString();
-                const [hours, minutes] = session.startTime.split(':');
-                const sessionStartTime = new Date(session.scheduledDate);
-                sessionStartTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0);
-                const timeHasCome = isToday && new Date() >= new Date(sessionStartTime.getTime() - 15 * 60000); // 15 mins before
+
+                const scheduledDateObj = new Date(session.scheduledDate);
+                
+                const startDateTime = new Date(scheduledDateObj);
+                const [startH, startM] = session.startTime.split(':');
+                startDateTime.setHours(parseInt(startH, 10), parseInt(startM, 10), 0, 0);
+
+                const endDateTime = new Date(scheduledDateObj);
+                const [endH, endM] = session.endTime.split(':');
+                endDateTime.setHours(parseInt(endH, 10), parseInt(endM, 10), 0, 0);
+
+                const isBeforeStart = now < startDateTime;
+                const isLive = now >= startDateTime && now <= endDateTime;
 
                 return (
                 <div key={idx} className="bg-gray-50 rounded-3xl p-6 border border-gray-100 hover:border-[#FFD700]/30 transition-colors relative group">
@@ -180,21 +208,22 @@ const TeacherDashboardHome = ({ teacher, setActiveTab }) => {
                       <span>{formatTime12h(session.startTime)} - {formatTime12h(session.endTime)}</span>
                    </div>
                    
-                   {timeHasCome ? (
+                   {isLive && (
                      <button 
                        onClick={() => handleStartScheduledClass(session)}
-                       className="w-full mt-2 flex items-center justify-center bg-[#1A1A1A] hover:bg-[#FFD700] text-white hover:text-[#1A1A1A] py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-md active:scale-95"
+                       className="w-full mt-2 flex items-center justify-center bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-md active:scale-95"
                      >
                        <Play size={14} className="mr-2" />
                        Start Class Now
                      </button>
-                   ) : (
+                   )}
+                   {isBeforeStart && (
                      <button 
                        disabled
-                       className="w-full mt-2 flex items-center justify-center bg-gray-200 text-gray-400 py-3 rounded-xl text-xs font-black uppercase tracking-widest cursor-not-allowed"
+                       className="w-full mt-2 flex items-center justify-center bg-red-500/10 text-red-500 border border-red-500/20 py-3 rounded-xl text-xs font-black uppercase tracking-widest cursor-not-allowed"
                      >
                        <Clock size={14} className="mr-2" />
-                       Starts at {formatTime12h(session.startTime)}
+                       Waiting For Class To Start
                      </button>
                    )}
                 </div>

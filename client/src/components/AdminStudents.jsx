@@ -160,7 +160,7 @@ const AdminStudents = () => {
       };
 
       if (modalMode === 'add') {
-        const response = await axios.post('/api/users', payload, {
+        await axios.post('/api/users', payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.success(`Student enrolled successfully!`);

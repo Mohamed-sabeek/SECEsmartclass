@@ -43,7 +43,7 @@ import SessionDetailsSkeleton from '../components/skeletons/SessionDetailsSkelet
 import ReportsListSkeleton from '../components/skeletons/ReportsListSkeleton';
 
 const TeacherDashboard = () => {
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
   const { tab, classId, sessionId } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(tab || 'dashboard');

@@ -11,7 +11,6 @@ const AdminAssignTeacher = () => {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState(false);
-  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [selectedAssignments, setSelectedAssignments] = useState([]); // Array of { classId, subject }
@@ -95,7 +94,6 @@ const AdminAssignTeacher = () => {
     }
 
     setSelectedAssignments(existingAssignments);
-    setError('');
   };
 
   const toggleClass = (classId) => {
@@ -135,7 +133,6 @@ const AdminAssignTeacher = () => {
 
     try {
       setAssigning(true);
-      setError('');
       const token = localStorage.getItem('token');
       const response = await axios.post('/api/users/assign-classes', {
         teacherId: selectedTeacher._id,

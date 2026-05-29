@@ -34,7 +34,7 @@ import ClassesSkeleton from '../components/skeletons/ClassesSkeleton';
 import StudentAttendanceSkeleton from '../components/skeletons/StudentAttendanceSkeleton';
 
 const StudentDashboard = () => {
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
   const { tab } = useParams();
   const [activeTab, setActiveTab] = useState(tab || 'dashboard');

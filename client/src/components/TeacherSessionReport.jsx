@@ -149,7 +149,7 @@ const TeacherSessionReport = () => {
           return (b.attendancePercentage || 0) - (a.attendancePercentage || 0);
         case 'percentage-asc':
           return (a.attendancePercentage || 0) - (b.attendancePercentage || 0);
-        case 'duration-desc':
+        case 'duration-desc': {
           const getSecs = (dur) => {
             if (!dur) return 0;
             const parts = dur.split(' ');
@@ -159,6 +159,7 @@ const TeacherSessionReport = () => {
             return total;
           };
           return getSecs(b.attendedDuration) - getSecs(a.attendedDuration);
+        }
         default:
           return 0;
       }

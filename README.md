@@ -51,6 +51,13 @@ To ensure high scalability and sub-second response times even under heavy academ
 *   **Lazy Loading & Suspense Shimmering**: Implements React `lazy` routing boundaries wrapped in custom shimmering skeleton layouts (`TableSkeleton`, `ProfileSkeleton`) to maximize initial paint speeds.
 *   **Cloudinary Asset Pipeline**: Auto-transforms profile images on the fly via CDN parameters (`w_200,h_200,c_fill,q_auto,f_auto`) to achieve lightweight assets and microsecond rendering.
 
+### 7. Time-Bound Session Gatekeeping & Clock Synchronization
+*   **Microsecond Clock Synchronization**: Enforces real-time polling to update the client-side UI precisely every second.
+*   **Time-Locked Class Gates**: Enforces absolute time boundaries (`startTime` and `endTime`) preventing early entries or post-session interactions.
+*   **Interactive Red/Green Dynamic Indicator**: Displays a high-contrast disabled red button (`"Waiting For Class To Start"`) before the scheduled start time, transitioning into a vibrant enabled emerald button (`"Start Class Now"` / `"Join Class"`) during the live window.
+*   **Zero-Overlapping State Filter**: Dynamically removes completed scheduled classes or those past their end time from the active queue, seamlessly redirecting the lifecycle states as the primary source of truth.
+*   **State-driven Database Auto-Completion**: Automatically flips scheduled class statuses to `'COMPLETED'` on the backend upon session termination, instantly synchronizing frontend views without manual page refresh.
+
 ---
 
 ## 💻 Technical Stack

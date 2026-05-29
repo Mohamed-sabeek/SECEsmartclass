@@ -17,11 +17,6 @@ import toast from 'react-hot-toast';
 const TeacherClasses = ({ teacher, assignedClasses }) => {
   const navigate = useNavigate();
   const [activeSession, setActiveSession] = useState(null);
-  const [loadingActive, setLoadingActive] = useState(true);
-
-  useEffect(() => {
-    fetchActiveSession();
-  }, []);
 
   const fetchActiveSession = async () => {
     try {
@@ -32,10 +27,13 @@ const TeacherClasses = ({ teacher, assignedClasses }) => {
       setActiveSession(response.data.data);
     } catch (error) {
       console.error('Error fetching active session:', error);
-    } finally {
-      setLoadingActive(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchActiveSession();
+  }, []);
 
   const handleStartNavigation = (classId, subject = '') => {
     if (activeSession) {

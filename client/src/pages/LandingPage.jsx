@@ -17,8 +17,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import FeatureCard from '../components/FeatureCard';
-import seceLogo from '../assets/sece-logo.webp';
 
 const LandingPage = () => {
   const navigate = useNavigate();
