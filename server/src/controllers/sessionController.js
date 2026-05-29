@@ -80,9 +80,12 @@ const startSession = asyncHandler(async (req, res) => {
       meetingLink
     });
 
-    // Send email notifications to students (Async/Non-blocking)
+    // Send email notifications to students and teacher (Async/Non-blocking)
     const sendNotifications = async () => {
       try {
+        console.log('[EMAIL MODE] PRODUCTION\n');
+
+        // 1. Resolve students
         const studentFilter = { 
           role: 'student', 
           classId: classId 
@@ -91,18 +94,46 @@ const startSession = asyncHandler(async (req, res) => {
           studentFilter.section = section.toUpperCase().trim();
         }
 
-        const students = await User.find(studentFilter).select('email name');
+        const rawStudents = await User.find(studentFilter).select('email name');
+        const totalMatched = rawStudents.length;
 
-        if (students.length === 0) {
-          return;
+        // 2. Filter valid student emails
+        const validStudentRecipients = [];
+        let skippedCount = 0;
+
+        rawStudents.forEach(s => {
+          if (s.email && s.email.trim() !== '') {
+            validStudentRecipients.push(s.email.trim());
+          } else {
+            skippedCount++;
+          }
+        });
+
+        // 3. Remove duplicates
+        const uniqueStudentRecipients = [...new Set(validStudentRecipients)];
+
+        // Log recipient verification exactly as requested
+        console.log(`Matched Students: ${totalMatched}`);
+        console.log(`Valid Recipients: ${uniqueStudentRecipients.length}`);
+        console.log(`Skipped: ${skippedCount}\n`);
+        console.log('Recipients:');
+        if (uniqueStudentRecipients.length > 0) {
+          console.log(uniqueStudentRecipients.join('\n'));
+        } else {
+          console.log('(none)');
         }
 
-        let recipients = students.map(s => process.env.DEMO_EMAIL || s.email).filter(Boolean);
-        recipients = [...new Set(recipients)];
+        // 4. Resolve Teacher Confirmation
+        const teacherEmail = req.user.email;
+        const teacherName = req.user.name;
 
-        const emailTasks = recipients.map(recipient => {
-            
-            return sendEmail({
+        // Collect all tasks to execute via Promise.all
+        const emailTasks = [];
+
+        // Add students
+        uniqueStudentRecipients.forEach(recipient => {
+          emailTasks.push(
+            sendEmail({
               to: recipient,
               subject: `LIVE Class Started: ${subject}`,
               html: sessionStartTemplate({
@@ -117,10 +148,43 @@ const startSession = asyncHandler(async (req, res) => {
                 joinUrl: `${process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173'}/student/live`
               })
             }).catch(err => {
-              console.error(`❌ Failure: Could not send to ${recipient}:`, err.message);
-            });
-          });
+              console.error(`❌ Failure: Could not send to student ${recipient}:`, err.message);
+            })
+          );
+        });
 
+        // Add teacher confirmation
+        if (teacherEmail) {
+          emailTasks.push(
+            sendEmail({
+              to: teacherEmail,
+              subject: `LIVE Class Started Confirmation: ${subject}`,
+              html: `
+                <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #f0f0f0; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                  <div style="background: #1a1a1a; padding: 30px; text-align: center;">
+                    <h1 style="color: #ffd700; margin: 0; font-size: 24px; text-transform: uppercase;">SECE SmartClass</h1>
+                  </div>
+                  <div style="padding: 40px; background: #ffffff;">
+                    <div style="margin-bottom: 25px;">
+                      <span style="background: #e6f9ff; color: #0088cc; padding: 5px 15px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase;">✔ Teacher Confirmation</span>
+                    </div>
+                    <h2 style="color: #1a1a1a; margin: 0 0 10px 0;">Your LIVE class has been successfully started.</h2>
+                    <p style="color: #666;">Hello ${teacherName}, this is a confirmation that your live broadcast for <strong>${subject}</strong> has been initiated and notification emails have been dispatched to your active class roster.</p>
+                    <div style="background: #f8f8f8; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #ffd700;">
+                      <p style="margin: 5px 0;"><strong>Class ID:</strong> ${session.classId}</p>
+                      <p style="margin: 5px 0;"><strong>Section:</strong> ${session.section}</p>
+                      <p style="margin: 5px 0;"><strong>Start Time:</strong> ${new Date(session.startTime).toLocaleString()}</p>
+                    </div>
+                  </div>
+                </div>
+              `
+            }).catch(err => {
+              console.error(`❌ Failure: Could not send confirmation to teacher ${teacherEmail}:`, err.message);
+            })
+          );
+        }
+
+        // Execute batch asynchronously
         await Promise.all(emailTasks);
       } catch (err) {
         console.error('🔴 Critical Email notification error:', err.message);
@@ -986,12 +1050,15 @@ const scheduleSession = asyncHandler(async (req, res) => {
     });
 
     const populatedSession = await ScheduledSession.findById(scheduledSession._id)
-      .populate('teacher', 'name')
+      .populate('teacher', 'name email')
       .populate('class', 'className sections');
 
-    // Send email notifications to students
+    // Send email notifications to students and teacher (Async/Non-blocking)
     const sendNotifications = async () => {
       try {
+        console.log('[EMAIL MODE] PRODUCTION\n');
+
+        // 1. Resolve students
         const studentFilter = { 
           role: 'student', 
           classId: classId 
@@ -1000,9 +1067,34 @@ const scheduleSession = asyncHandler(async (req, res) => {
           studentFilter.section = section.toUpperCase().trim();
         }
 
-        const students = await User.find(studentFilter).select('email name');
+        const rawStudents = await User.find(studentFilter).select('email name');
+        const totalMatched = rawStudents.length;
 
-        if (students.length === 0) return;
+        // 2. Filter valid student emails
+        const validStudentRecipients = [];
+        let skippedCount = 0;
+
+        rawStudents.forEach(s => {
+          if (s.email && s.email.trim() !== '') {
+            validStudentRecipients.push(s.email.trim());
+          } else {
+            skippedCount++;
+          }
+        });
+
+        // 3. Remove duplicates
+        const uniqueStudentRecipients = [...new Set(validStudentRecipients)];
+
+        // Log recipient verification exactly as requested
+        console.log(`Matched Students: ${totalMatched}`);
+        console.log(`Valid Recipients: ${uniqueStudentRecipients.length}`);
+        console.log(`Skipped: ${skippedCount}\n`);
+        console.log('Recipients:');
+        if (uniqueStudentRecipients.length > 0) {
+          console.log(uniqueStudentRecipients.join('\n'));
+        } else {
+          console.log('(none)');
+        }
 
         const formatTime12h = (time24) => {
           const [hourStr, minute] = time24.split(':');
@@ -1012,17 +1104,21 @@ const scheduleSession = asyncHandler(async (req, res) => {
           return `${hour}:${minute} ${ampm}`;
         };
 
-        let recipients = students.map(s => process.env.DEMO_EMAIL || s.email).filter(Boolean);
-        recipients = [...new Set(recipients)];
+        const teacherEmail = populatedSession.teacher?.email;
+        const teacherName = populatedSession.teacher?.name;
 
-        const emailTasks = recipients.map(recipient => {
-            
-            return sendEmail({
+        // Collect all tasks to execute via Promise.all
+        const emailTasks = [];
+
+        // Add students
+        uniqueStudentRecipients.forEach(recipient => {
+          emailTasks.push(
+            sendEmail({
               to: recipient,
               subject: `Class Scheduled: ${subject}`,
               html: sessionScheduledTemplate({
                 subject,
-                teacherName: populatedSession.teacher.name,
+                teacherName: teacherName,
                 className: `${populatedSession.class.className} ${section ? `(Section ${section})` : ''}`,
                 scheduledDate: new Date(scheduledDate).toLocaleDateString('en-US', {
                   weekday: 'long',
@@ -1034,10 +1130,43 @@ const scheduleSession = asyncHandler(async (req, res) => {
                 endTime: formatTime12h(endTime)
               })
             }).catch(err => {
-              console.error(`❌ Failure: Could not send to ${recipient}:`, err.message);
-            });
-          });
+              console.error(`❌ Failure: Could not send to student ${recipient}:`, err.message);
+            })
+          );
+        });
 
+        // Add teacher confirmation
+        if (teacherEmail) {
+          emailTasks.push(
+            sendEmail({
+              to: teacherEmail,
+              subject: `Class Scheduled Confirmation: ${subject}`,
+              html: `
+                <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #f0f0f0; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                  <div style="background: #1a1a1a; padding: 30px; text-align: center;">
+                    <h1 style="color: #ffd700; margin: 0; font-size: 24px; text-transform: uppercase;">SECE SmartClass</h1>
+                  </div>
+                  <div style="padding: 40px; background: #ffffff;">
+                    <div style="margin-bottom: 25px;">
+                      <span style="background: #e6f9ff; color: #0088cc; padding: 5px 15px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase;">✔ Teacher Confirmation</span>
+                    </div>
+                    <h2 style="color: #1a1a1a; margin: 0 0 10px 0;">Your class has been successfully scheduled.</h2>
+                    <p style="color: #666;">Hello ${teacherName}, this is a confirmation that your upcoming session for <strong>${subject}</strong> has been scheduled and notification emails have been dispatched to your active class roster.</p>
+                    <div style="background: #f8f8f8; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #ffd700;">
+                      <p style="margin: 5px 0;"><strong>Class:</strong> ${populatedSession.class.className} ${section ? `(Section ${section})` : ''}</p>
+                      <p style="margin: 5px 0;"><strong>Scheduled Date:</strong> ${new Date(scheduledDate).toLocaleDateString()}</p>
+                      <p style="margin: 5px 0;"><strong>Time Window:</strong> ${formatTime12h(startTime)} - ${formatTime12h(endTime)}</p>
+                    </div>
+                  </div>
+                </div>
+              `
+            }).catch(err => {
+              console.error(`❌ Failure: Could not send confirmation to teacher ${teacherEmail}:`, err.message);
+            })
+          );
+        }
+
+        // Execute batch asynchronously
         await Promise.all(emailTasks);
       } catch (err) {
         console.error('🔴 Critical Email notification error:', err.message);
