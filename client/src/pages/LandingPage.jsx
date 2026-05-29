@@ -10,7 +10,8 @@ import {
   Clock,
   Award,
   UserCheck,
-  BarChart
+  BarChart,
+  HelpCircle
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -246,6 +247,37 @@ const LandingPage = () => {
             Login to Dashboard
             <ArrowRight className="ml-3" size={28} />
           </button>
+        </div>
+      </section>
+
+      {/* Support Card Section */}
+      <section className="pb-24 md:pb-32 px-6 bg-white">
+        <div className="max-w-4xl mx-auto bg-gradient-to-br from-[#1A1A1A] to-[#2D2D2D] p-8 md:p-12 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFD700]/10 rounded-full blur-3xl group-hover:bg-[#FFD700]/20 transition-all duration-500"></div>
+          
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="text-center md:text-left">
+              <span className="text-[#FFD700] font-black tracking-[0.2em] uppercase text-xs mb-3 block">
+                Assistance & Troubleshooting
+              </span>
+              <h3 className="text-3xl md:text-4xl font-black mb-4 tracking-tight">
+                Need Help?
+              </h3>
+              <p className="text-gray-400 font-medium leading-relaxed max-w-lg">
+                For technical support, account access issues, or classroom assistance, our dedicated team is ready to help you succeed.
+              </p>
+            </div>
+            
+            <div className="shrink-0">
+              <a 
+                href="mailto:safeeofficial1730@gmail.com"
+                className="bg-[#FFD700] hover:bg-white text-[#1A1A1A] px-10 py-5 rounded-2xl font-black text-lg transition-all duration-300 shadow-xl hover:scale-105 active:scale-95 flex items-center gap-2 group-hover:shadow-[#FFD700]/10"
+              >
+                <HelpCircle size={22} />
+                Contact Support
+              </a>
+            </div>
+          </div>
         </div>
       </section>
 

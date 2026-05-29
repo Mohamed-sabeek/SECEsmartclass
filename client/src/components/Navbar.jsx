@@ -37,7 +37,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
+    <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100/80 shadow-sm">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
@@ -48,10 +48,10 @@ const Navbar = () => {
             <img 
               src={seceLogo} 
               alt="SECE Logo" 
-              className="h-16 md:h-20 w-auto object-contain" 
+              className="h-20 md:h-24 w-auto object-contain transition-transform duration-500 group-hover:scale-105" 
             />
-            <span className="text-xl md:text-2xl text-[#1A1A1A] tracking-tight leading-none">
-              SECE <span className="font-bold text-[#FFD700]">SmartClass</span>
+            <span className="text-xl md:text-2xl font-black text-[#1A1A1A] tracking-tighter leading-none transition-colors duration-300 group-hover:text-gray-800">
+              SECE <span className="text-[#FFD700] font-black">SmartClass</span>
             </span>
           </div>
 
@@ -60,26 +60,28 @@ const Navbar = () => {
             <a 
               href="#features" 
               onClick={(e) => handleNavClick(e, 'features')}
-              className="text-sm font-medium text-gray-600 hover:text-[#FFD700] transition-all duration-300"
+              className="text-sm font-bold tracking-wide text-gray-600 hover:text-[#1A1A1A] transition-all duration-300 relative py-1 group"
             >
               Features
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#FFD700] transition-all duration-300 group-hover:w-full"></span>
             </a>
             <a 
               href="#how-it-works" 
               onClick={(e) => handleNavClick(e, 'how-it-works')}
-              className="text-sm font-medium text-gray-600 hover:text-[#FFD700] transition-all duration-300"
+              className="text-sm font-bold tracking-wide text-gray-600 hover:text-[#1A1A1A] transition-all duration-300 relative py-1 group"
             >
               How It Works
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#FFD700] transition-all duration-300 group-hover:w-full"></span>
             </a>
-            <a href="/login" className="bg-[#1A1A1A] hover:bg-[#FFD700] text-white hover:text-[#1A1A1A] px-6 py-2.5 rounded-xl font-bold transition-all duration-300 shadow-md active:scale-95">
-              Login
+            <a href="/login" className="bg-[#1A1A1A] hover:bg-[#FFD700] text-white hover:text-[#1A1A1A] px-7 py-3 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 shadow-md hover:shadow-lg active:scale-95">
+              Login Portal
             </a>
           </div>
 
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden text-[#1A1A1A]"
+            className="md:hidden text-[#1A1A1A] focus:outline-none p-2 rounded-lg hover:bg-gray-50 transition-colors"
           >
             {isOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -87,23 +89,23 @@ const Navbar = () => {
 
         {/* Mobile Menu */}
         {isOpen && (
-          <div className="md:hidden py-4 space-y-4">
+          <div className="md:hidden py-6 space-y-4 border-t border-gray-50 animate-fadeIn">
             <a 
               href="#features" 
               onClick={(e) => handleNavClick(e, 'features')}
-              className="block text-[#1A1A1A] hover:text-[#FFD700] transition-all duration-300"
+              className="block text-base font-bold text-gray-600 hover:text-[#FFD700] transition-all duration-300 py-1"
             >
               Features
             </a>
             <a 
               href="#how-it-works" 
               onClick={(e) => handleNavClick(e, 'how-it-works')}
-              className="block text-[#1A1A1A] hover:text-[#FFD700] transition-all duration-300"
+              className="block text-base font-bold text-gray-600 hover:text-[#FFD700] transition-all duration-300 py-1"
             >
               How It Works
             </a>
-            <a href="/login" className="block w-full bg-[#FFD700] hover:bg-[#FFED4E] text-white px-6 py-2 rounded-lg transition-all duration-300 text-center">
-              Login
+            <a href="/login" className="block w-full bg-[#1A1A1A] hover:bg-[#FFD700] text-white hover:text-[#1A1A1A] px-6 py-3 rounded-xl font-bold transition-all duration-300 text-center shadow-md">
+              Login Portal
             </a>
           </div>
         )}
