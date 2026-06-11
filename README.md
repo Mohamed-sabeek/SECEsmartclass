@@ -12,6 +12,42 @@ The platform operates through three distinct entry points, each tailored to spec
 *   **Teacher**: Conducts live sessions, manages subject-specific rosters, and monitors real-time student engagement and attendance analytics.
 *   **Student**: Accesses a personalized learning portal to join active sessions, track attendance history, and manage academic profiles.
 
+```text
+Admin
+│
+├── Departments
+├── Classes
+└── Teacher Assigning
+
+Teacher
+│
+├── Schedule Session
+├── Start Live Class
+├── Attendance Reports
+└── Student Analytics
+
+Student
+│
+├── Join Session
+├── Attendance History
+└── Profile Management
+
+                │
+                ▼
+
+        Jitsi Meet Layer
+
+                │
+                ▼
+
+    Node.js + Express API
+
+                │
+                ▼
+
+            MongoDB
+```
+
 ---
 
 ## 🚀 Core Capabilities
@@ -20,10 +56,14 @@ The platform operates through three distinct entry points, each tailored to spec
 The system enforces a strict **Teacher → Class → Subject** relationship, ensuring that students only see the correct assigned faculty for their specific batch and academic year.
 
 ### 2. Automated Live Sessions
-Integrates **Jitsi Meet API** for secure, high-fidelity video conferencing directly within the dashboard.
-*   **Seamless Authentication**: Students join via secure JWT-authenticated bridges without requiring external session codes.
-*   **Role-Based Access**: Automatic moderator privileges for faculty and participant roles for students.
-*   **Session Persistence**: Advanced handling of browser refreshes to ensure active sessions remain connected for both parties.
+
+Integrates Jitsi Meet for secure video conferencing directly within the platform.
+
+* Embedded classroom experience without redirecting users to external meeting pages.
+* Teacher moderator controls and student participant access.
+* Real-time session lifecycle management.
+* Session attendance tracking based on actual join and leave events.
+* Browser refresh recovery and session persistence handling.
 
 ### 3. Precision Attendance Tracking
 *   **Event-Driven Logging**: Attendance is captured based on actual meeting join/leave events via the Jitsi API.
@@ -31,28 +71,28 @@ Integrates **Jitsi Meet API** for secure, high-fidelity video conferencing direc
 *   **Analytical Reporting**: Generates automated attendance percentages and historical trends for institutional audits.
 *   **Standardized Timezone Engine**: Enforces Indian Standard Time (IST - Asia/Kolkata) across all UI views and exports, eliminating UTC mismatches.
 *   **Consolidated Section Normalization Engine**: Intelligently handles unspecified (`NONE`/`null`/`empty`) sections across students and session registries, guaranteeing seamless class-wide broadcast delivery.
-*   **Premium Native Excel/PDF Exports**: One-click generation of beautifully formatted, autofitted Excel spreadsheets (via `exceljs`) and structured, high-fidelity PDF reports (via `pdfkit-table`) for institutional storage.
+*   **Native Excel and PDF Exports**: One-click generation of beautifully formatted, autofitted Excel spreadsheets (via `exceljs`) and structured, high-fidelity PDF reports (via `pdfkit-table`) for institutional storage.
 
 ### 4. Interactive Student Roster Search
 *   **Instant Search Pipeline**: Enables rapid filtering by student name or roll number with custom query highlighting.
 *   **Clean Pagination & Counts**: Displays dynamically updated row index indices and total records count under active search.
 
 ### 5. Professional Design System
-*   **Premium Dashboard UI**: A clean, modern interface utilizing a gold-and-white aesthetic for high readability.
+*   **Professional Dashboard UI**: A clean, modern interface utilizing a gold-and-white aesthetic for high readability.
 *   **Full Responsiveness**: Optimized grid systems that adapt seamlessly from desktop administration to mobile participation.
 *   **Accessibility**: Built with Headless UI to ensure high standards of interaction and consistency.
 
 ### 6. High-Performance Optimization Architecture
 To ensure high scalability and sub-second response times even under heavy academic cohorts, the platform integrates a modern performance layer:
 *   **Projection & Lean Querying**: Employs Mongoose `.select()` and `.lean()` to load only necessary fields, eliminating the overhead of full document hydration.
-*   **Strategic Database Indexing**: Multi-field compound indexes on `Attendance` (`studentId`, `sessionId`), `Session` (`teacherId`, `classId`, `startTime`), and `Class` (`departmentId`, `year`) ensure index-covered scans for zero-latency reports.
+*   **Strategic Database Indexing**: Multi-field compound indexes on `Attendance` (`studentId`, `sessionId`), `Session` (`teacherId`, `classId`, `startTime`), and `Class` (`departmentId`, `year`) ensure index-covered scans for near-instant report generation.
 *   **Backend Aggregated Analytics**: Aggregates calculation overhead (e.g. attendance ratios, counts, and averages) directly within server queries, offloading CPU-intensive loops from the client's browser.
 *   **Server-Side Search & Pagination**: Enforces pagination (`page`, `limit`) and server-side debounced regex searching (`search`) to limit DOM nodes and network transport sizes to 6-10 rows per view.
 *   **Lazy Loading & Suspense Shimmering**: Implements React `lazy` routing boundaries wrapped in custom shimmering skeleton layouts (`TableSkeleton`, `ProfileSkeleton`) to maximize initial paint speeds.
 *   **Cloudinary Asset Pipeline**: Auto-transforms profile images on the fly via CDN parameters (`w_200,h_200,c_fill,q_auto,f_auto`) to achieve lightweight assets and microsecond rendering.
 
 ### 7. Time-Bound Session Gatekeeping & Clock Synchronization
-*   **Microsecond Clock Synchronization**: Enforces real-time polling to update the client-side UI precisely every second.
+*   **Second-Level Clock Synchronization**: Enforces real-time polling to update the client-side UI precisely every second.
 *   **Time-Locked Class Gates**: Enforces absolute time boundaries (`startTime` and `endTime`) preventing early entries or post-session interactions.
 *   **Interactive Red/Green Dynamic Indicator**: Displays a high-contrast disabled red button (`"Waiting For Class To Start"`) before the scheduled start time, transitioning into a vibrant enabled emerald button (`"Start Class Now"` / `"Join Class"`) during the live window.
 *   **Zero-Overlapping State Filter**: Dynamically removes completed scheduled classes or those past their end time from the active queue, seamlessly redirecting the lifecycle states as the primary source of truth.
@@ -83,6 +123,46 @@ To ensure high scalability and sub-second response times even under heavy academ
 
 ---
 
+## 🔬 Infrastructure Research & Self-Hosted Deployment
+
+As part of platform optimization and cost-reduction research, a separate deployment branch was created to evaluate a fully self-hosted Jitsi Meet architecture.
+
+### Research Environment
+
+- Ubuntu Server 22.04.5 LTS
+- VMware Workstation
+- Prosody XMPP Server
+- Jicofo Conference Focus
+- Jitsi Videobridge
+
+### Objectives
+
+- Eliminate recurring Jitsi SaaS costs
+- Evaluate institutional deployment feasibility
+- Test scalability for large classroom environments
+- Explore VPS and dedicated server deployment models
+
+This research successfully demonstrated live teacher-student conferencing using a self-hosted Jitsi infrastructure.
+
+---
+
+## 🗄️ Data Model Overview
+
+Core entities include:
+
+- Departments
+- Classes
+- Subjects
+- Teachers
+- Students
+- Live Sessions
+- Attendance Records
+- Attendance Reports
+
+Relationships are enforced through MongoDB references to maintain academic consistency across the platform.
+
+---
+
 ## 📸 Screenshots
 
 | Login Interface | Teacher Dashboard |
@@ -100,6 +180,8 @@ To ensure high scalability and sub-second response times even under heavy academ
 - **Frontend**: [https://sec-esmartclass.vercel.app/](https://sec-esmartclass.vercel.app/)
 - **Backend API**: [https://sece-smartclass.onrender.com](https://sece-smartclass.onrender.com)
 
+> ⚠️ **Note**: The backend demo deployment is hosted on Render's free tier. If the service has been inactive, it may take 50+ seconds to spin up on the first request.
+
 ---
 
 ## ⚙️ Getting Started
@@ -107,7 +189,8 @@ To ensure high scalability and sub-second response times even under heavy academ
 ### 1. Prerequisites
 - Node.js (v18+)
 - MongoDB Atlas Account
-- Cloudinary & Jitsi JaaS Credentials
+- Cloudinary Credentials
+- Jitsi Configuration Credentials
 
 ### 2. Environment Configuration
 Create a `.env` file in the `server/` directory:
@@ -140,6 +223,19 @@ cd server && npm run dev
 cd client && npm run dev
 ```
 ---
+
+## 🚀 Future Enhancements
+
+- Self-hosted Jitsi production deployment
+- Learning material repository
+- Assignment and submission workflows
+- In-platform announcements
+- Student performance analytics
+- AI-powered academic assistance
+- Multi-campus institutional support
+
+---
+
 ## 👨‍💻 Author
 
 Developed by Mohamed Sabeek H  
